@@ -1,10 +1,10 @@
 # Diseño de interfaz de usuario
 
-La aplicación tendrá la siguientes pantallas
+La aplicación tendrá las siguientes pantallas
 
-1. Pantalla 1: Lorem Ipsum Dolor
+1. Pantalla 1: 
 
-![screen1](images/waze_app_screenshot.jpg)
+
 
 # Referencias
 

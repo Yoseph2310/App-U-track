@@ -8,9 +8,10 @@ Otra de sus funciones principales es el cálculo de la nota final de cada materi
 
 En general, U-Track busca convertirse en un apoyo para la vida universitaria, ayudando al estudiante a mantenerse organizado, cumplir con sus responsabilidades y aprovechar mejor su tiempo, para que ninguna entrega o actividad importante vuelva a pasarse por alto.
 
-Autor(es):Andres Santiago Zipa Marin
-          Raul Esteban Totaitive Beltran
-          Yoseph Felipe Galvis Gaitan
+Autor(es):
+- Galvis Gaitan Yoseph Felipe
+- Totaitive Beltran Raul Esteban
+- Zipa Marin Andres Santiago
 
 ## Referencias
 
