@@ -32,10 +32,44 @@ Vista principal de la app tras iniciar sesión.
 
 <p align="center">
   <img width="280" alt="Home" src="https://github.com/user-attachments/assets/a5f6051e-1ee5-40e2-9f9f-704ec8d10f03" />
-  &nbsp;&nbsp;&nbsp;
-  <img width="280" alt="Home 2" src="https://github.com/user-attachments/assets/a920c8ab-8c87-45f0-b3c8-543b4967d9cf" />
+  &nbsp;&nbsp;&nbsp;   <img width="280" alt="Home 2" src="https://github.com/user-attachments/assets/a920c8ab-8c87-45f0-b3c8-543b4967d9cf" />
+
 </p>
 
+---
+## Pantalla 4 — Lista de materias
+
+Listado de todas las materias registradas con su nota acumulada.
+
+<p align="center">
+  <img width="400" alt="Lista de materias" src="https://github.com/user-attachments/assets/67898a88-0cd2-4f45-b573-645876fb1843" />
+</p>
+
+---
+
+## Pantalla 5 — Detalle de materia
+
+Nota acumulada, actividades evaluadas y cálculo de lo que falta para aprobar.
+
+<p align="center">
+  <img width="400" alt="Detalle de materia" src="https://github.com/user-attachments/assets/33261a53-e3c5-4ad5-b0b0-6e125236b186" />
+</p>
+
+---
+
+## Pantalla 6 — Crear/editar materia y notas
+
+Formularios para registrar una materia nueva con su esquema de evaluación, o una nota dentro de una materia existente.
+
+<p align="center">
+  <img width="280" alt="Nueva nota" src="https://github.com/user-attachments/assets/e2c597fe-49f1-4366-9d4b-fbe589404edf" />
+  &nbsp;&nbsp;&nbsp;
+  <img width="280" alt="Nueva materia" src="https://github.com/user-attachments/assets/9630cf51-bb65-421d-9e57-2a21157206f6" />
+  
+  
+</p>
+
+---
 
 # Referencias
 
