@@ -71,6 +71,21 @@ Formularios para registrar una materia nueva con su esquema de evaluación, o un
 
 ---
 
+## 7. Registrar trabajo/actividad
+<img width="457" height="730" alt="image" src="https://github.com/user-attachments/assets/fc19b1b2-d620-48b9-a860-007884d407a6" />
+
+---
+
+## 8. Calculadora de notas independiente
+<img width="447" height="767" alt="Captura de pantalla 2026-09-03 173137" src="https://github.com/user-attachments/assets/934855eb-b845-4787-8fee-840878f365fa" />
+---
+
+## 9. Recordatorios / Configuración
+<img width="421" height="793" alt="Captura de pantalla 2026-09-03 173453" src="https://github.com/user-attachments/assets/be1f71b8-4784-46da-844c-2ab7889197cf" />
+
+---
+
+
 # Referencias
 
 - [Material Design: Foundations](https://m3.material.io/foundations)
