@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "717600349473",
+    "project_id": "u-track-d8b83",
+    "storage_bucket": "u-track-d8b83.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:717600349473:android:cac3e680e5a98267b9b260",
+        "android_client_info": {
+          "package_name": "com.example.app_u_track"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaEMWVOudXowsPGrxdWiUL0_v8vTjtxjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:717600349473:android:7d887104c4c8ba03b9b260",
+        "android_client_info": {
+          "package_name": "com.utrack.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaEMWVOudXowsPGrxdWiUL0_v8vTjtxjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

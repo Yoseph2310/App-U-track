@@ -1,0 +1,1 @@
+ C:\\Users\\esteb\\Documents\\U\\App-U-track\\.dart_tool\\flutter_build\\61f9b0804727e68d7f1fa28901d57722\\native_assets.json: 
