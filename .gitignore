@@ -13,3 +13,38 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# ===== Flutter / Dart (faltaban estas) =====
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+**/doc/api/
+
+# ===== IDE / Editor =====
+.idea/
+.vscode/
+
+# ===== Android =====
+android/app/google-services.json
+android/local.properties
+android/**/*.keystore
+android/**/*.jks
+android/key.properties
+
+# ===== iOS =====
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GoogleService-Info.plist
+ios/Pods/
+ios/.symlinks/
+**/xcuserdata/
+
+# ===== Firebase =====
+firebase-debug.log
+.firebase/
+
+# ===== Secretos =====
+*.env
+*.p12
+*.pem
