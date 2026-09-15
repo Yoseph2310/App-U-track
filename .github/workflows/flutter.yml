@@ -51,14 +51,16 @@ jobs:
     steps:
       - name: Check for Firebase Credentials
         id: secret-check
+        env:
+          GCP_CREDS: ${{ secrets.GCP_FIREBASE_CREDENTIALS }}
         run: |
-          if [ -z "\${{ secrets.GCP_FIREBASE_CREDENTIALS }}" ]; then
+          if [ -z "$GCP_CREDS" ]; then
             echo "⚠️ GCP_FIREBASE_CREDENTIALS secret is not available (likely a fork)."
             echo "⏩ Breaking job early to avoid failures."
-            echo "should_skip=true" >> \$GITHUB_OUTPUT
+            echo "should_skip=true" >> $GITHUB_OUTPUT
           else
             echo "🚀 GCP_FIREBASE_CREDENTIALS secret found."
-            echo "should_skip=false" >> \$GITHUB_OUTPUT
+            echo "should_skip=false" >> $GITHUB_OUTPUT
           fi
       # Download the APK uploaded in the previous job
       - name: Download APK Artifact
