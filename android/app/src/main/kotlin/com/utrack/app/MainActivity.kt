@@ -1,4 +1,4 @@
-package com.example.app_u_track
+package com.utrack.app
 
 import io.flutter.embedding.android.FlutterActivity
 
