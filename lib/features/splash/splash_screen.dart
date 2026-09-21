@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,13 +16,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(
-      'assets/videos/Splash_Screen_1.mp4',
-    )..initialize().then((_) {
-      _controller.setLooping(false);
-      _controller.play();
-      setState(() => _videoReady = true);
-    });
+    _controller = VideoPlayerController.asset('assets/videos/Splash_Screen_1.mp4')
+      ..initialize().then((_) {
+        _controller.setLooping(false);
+        _controller.play();
+        setState(() => _videoReady = true);
+
+        // Cuando el video termine, ir al login
+        _controller.addListener(() {
+          if (_controller.value.position >= _controller.value.duration) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            );
+          }
+        });
+      });
   }
 
   @override
