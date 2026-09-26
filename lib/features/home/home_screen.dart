@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../subjects/screens/subjects_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -134,12 +142,41 @@ class HomeScreen extends StatelessWidget {
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,
         type: BottomNavigationBarType.fixed,
-        currentIndex: 0,
+        currentIndex: _currentIndex,
+
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubjectsScreen(),
+              ),
+            );
+            return;
+          }
+
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.book_outlined), label: 'Materias'),
-          BottomNavigationBarItem(icon: Icon(Icons.calculate_outlined), label: 'Notas'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Ajustes'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book_outlined),
+            label: 'Materias',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calculate_outlined),
+            label: 'Calculadora',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            label: 'Configuración',
+          ),
         ],
       ),
     );
