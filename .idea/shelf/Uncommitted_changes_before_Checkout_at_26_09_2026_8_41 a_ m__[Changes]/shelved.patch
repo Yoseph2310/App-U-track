@@ -1,0 +1,603 @@
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_25\" default=\"true\" project-jdk-name=\"jbr-25\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/out\" />\r\n  </component>\r\n</project>
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision f951577b29b8bff31cd44b9c6da298556402a48a)
++++ b/.idea/misc.xml	(date 1790427935485)
+@@ -1,4 +1,3 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ProjectRootManager" version="2" languageLevel="JDK_25" default="true" project-jdk-name="jbr-25" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/out" />
+Index: macos/Flutter/GeneratedPluginRegistrant.swift
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>//\r\n//  Generated file. Do not edit.\r\n//\r\n\r\nimport FlutterMacOS\r\nimport Foundation\r\n\r\nimport video_player_avfoundation\r\n\r\nfunc RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {\r\n  VideoPlayerPlugin.register(with: registry.registrar(forPlugin: \"VideoPlayerPlugin\"))\r\n}\r\n
+===================================================================
+diff --git a/macos/Flutter/GeneratedPluginRegistrant.swift b/macos/Flutter/GeneratedPluginRegistrant.swift
+--- a/macos/Flutter/GeneratedPluginRegistrant.swift	(revision f951577b29b8bff31cd44b9c6da298556402a48a)
++++ b/macos/Flutter/GeneratedPluginRegistrant.swift	(date 1790425880292)
+@@ -5,8 +5,14 @@
+ import FlutterMacOS
+ import Foundation
+ 
++import cloud_firestore
++import firebase_auth
++import firebase_core
+ import video_player_avfoundation
+ 
+ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
++  FLTFirebaseFirestorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseFirestorePlugin"))
++  FLTFirebaseAuthPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseAuthPlugin"))
++  FLTFirebaseCorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseCorePlugin"))
+   VideoPlayerPlugin.register(with: registry.registrar(forPlugin: "VideoPlayerPlugin"))
+ }
+Index: .dart_tool/package_config.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\r\n  \"configVersion\": 2,\r\n  \"packages\": [\r\n    {\r\n      \"name\": \"async\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/async-2.13.1\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"boolean_selector\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/boolean_selector-2.1.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.1\"\r\n    },\r\n    {\r\n      \"name\": \"characters\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/characters-1.4.1\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"clock\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/clock-1.1.3\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"collection\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/collection-1.19.1\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"csslib\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/csslib-1.0.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.1\"\r\n    },\r\n    {\r\n      \"name\": \"cupertino_icons\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/cupertino_icons-1.0.9\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.9\"\r\n    },\r\n    {\r\n      \"name\": \"fake_async\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/fake_async-1.3.3\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.3\"\r\n    },\r\n    {\r\n      \"name\": \"flutter\",\r\n      \"rootUri\": \"file:///C:/Users/asus/Downloads/flutter/packages/flutter\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.11\"\r\n    },\r\n    {\r\n      \"name\": \"flutter_lints\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-6.0.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.8\"\r\n    },\r\n    {\r\n      \"name\": \"flutter_test\",\r\n      \"rootUri\": \"file:///C:/Users/asus/Downloads/flutter/packages/flutter_test\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.11\"\r\n    },\r\n    {\r\n      \"name\": \"flutter_web_plugins\",\r\n      \"rootUri\": \"file:///C:/Users/asus/Downloads/flutter/packages/flutter_web_plugins\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.11\"\r\n    },\r\n    {\r\n      \"name\": \"html\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/html-0.15.7\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.6\"\r\n    },\r\n    {\r\n      \"name\": \"leak_tracker\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-11.0.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.2\"\r\n    },\r\n    {\r\n      \"name\": \"leak_tracker_flutter_testing\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker_flutter_testing-3.0.10\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.2\"\r\n    },\r\n    {\r\n      \"name\": \"leak_tracker_testing\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker_testing-3.0.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.2\"\r\n    },\r\n    {\r\n      \"name\": \"lints\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/lints-6.1.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.8\"\r\n    },\r\n    {\r\n      \"name\": \"matcher\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/matcher-0.12.20\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.10\"\r\n    },\r\n    {\r\n      \"name\": \"material_color_utilities\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/material_color_utilities-0.13.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.5\"\r\n    },\r\n    {\r\n      \"name\": \"meta\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.18.3\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.5\"\r\n    },\r\n    {\r\n      \"name\": \"path\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.1\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"plugin_platform_interface\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.0\"\r\n    },\r\n    {\r\n      \"name\": \"sky_engine\",\r\n      \"rootUri\": \"file:///C:/Users/asus/Downloads/flutter/bin/cache/pkg/sky_engine\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.11\"\r\n    },\r\n    {\r\n      \"name\": \"source_span\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/source_span-1.10.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.1\"\r\n    },\r\n    {\r\n      \"name\": \"stack_trace\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/stack_trace-1.12.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"stream_channel\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/stream_channel-2.1.4\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.3\"\r\n    },\r\n    {\r\n      \"name\": \"string_scanner\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/string_scanner-1.4.1\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.1\"\r\n    },\r\n    {\r\n      \"name\": \"term_glyph\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/term_glyph-1.2.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.1\"\r\n    },\r\n    {\r\n      \"name\": \"test_api\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.12\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.10\"\r\n    },\r\n    {\r\n      \"name\": \"vector_math\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.4.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.10\"\r\n    },\r\n    {\r\n      \"name\": \"video_player\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player-2.14.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.12\"\r\n    },\r\n    {\r\n      \"name\": \"video_player_android\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_android-2.12.2\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.12\"\r\n    },\r\n    {\r\n      \"name\": \"video_player_avfoundation\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_avfoundation-2.12.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.10\"\r\n    },\r\n    {\r\n      \"name\": \"video_player_platform_interface\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_platform_interface-6.9.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.10\"\r\n    },\r\n    {\r\n      \"name\": \"video_player_web\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_web-2.4.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.6\"\r\n    },\r\n    {\r\n      \"name\": \"vm_service\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vm_service-15.3.0\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.5\"\r\n    },\r\n    {\r\n      \"name\": \"web\",\r\n      \"rootUri\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/web-1.1.1\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.4\"\r\n    },\r\n    {\r\n      \"name\": \"app_u_track\",\r\n      \"rootUri\": \"../\",\r\n      \"packageUri\": \"lib/\",\r\n      \"languageVersion\": \"3.13\"\r\n    }\r\n  ],\r\n  \"generator\": \"pub\",\r\n  \"generatorVersion\": \"3.13.3\",\r\n  \"flutterRoot\": \"file:///C:/Users/asus/Downloads/flutter\",\r\n  \"flutterVersion\": \"3.47.3\",\r\n  \"pubCache\": \"file:///C:/Users/asus/AppData/Local/Pub/Cache\"\r\n}\r\n
+===================================================================
+diff --git a/.dart_tool/package_config.json b/.dart_tool/package_config.json
+--- a/.dart_tool/package_config.json	(revision f951577b29b8bff31cd44b9c6da298556402a48a)
++++ b/.dart_tool/package_config.json	(date 1790425880152)
+@@ -2,224 +2,302 @@
+   "configVersion": 2,
+   "packages": [
+     {
++      "name": "_flutterfire_internals",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/_flutterfire_internals-1.3.77",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
+       "name": "async",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/async-2.13.1",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/async-2.13.1",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+     {
+       "name": "boolean_selector",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/boolean_selector-2.1.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/boolean_selector-2.1.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.1"
+     },
+     {
+       "name": "characters",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/characters-1.4.1",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/characters-1.4.1",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+     {
+       "name": "clock",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/clock-1.1.3",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/clock-1.1.3",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+     {
++      "name": "cloud_firestore",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore-6.10.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "cloud_firestore_platform_interface",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore_platform_interface-8.0.7",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "cloud_firestore_web",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore_web-5.7.3",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
+       "name": "collection",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/collection-1.19.1",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/collection-1.19.1",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+     {
+       "name": "csslib",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/csslib-1.0.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/csslib-1.0.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.1"
+     },
+     {
+       "name": "cupertino_icons",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/cupertino_icons-1.0.9",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/cupertino_icons-1.0.9",
+       "packageUri": "lib/",
+       "languageVersion": "3.9"
+     },
+     {
+       "name": "fake_async",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/fake_async-1.3.3",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/fake_async-1.3.3",
+       "packageUri": "lib/",
+       "languageVersion": "3.3"
+     },
+     {
++      "name": "firebase_auth",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth-6.7.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "firebase_auth_platform_interface",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_platform_interface-9.1.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "firebase_auth_web",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_web-6.3.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "firebase_core",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core-4.15.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "firebase_core_platform_interface",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core_platform_interface-8.1.1",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
++      "name": "firebase_core_web",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core_web-3.12.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.6"
++    },
++    {
+       "name": "flutter",
+-      "rootUri": "file:///C:/Users/asus/Downloads/flutter/packages/flutter",
++      "rootUri": "file:///C:/src/flutter/packages/flutter",
+       "packageUri": "lib/",
+       "languageVersion": "3.11"
+     },
+     {
+       "name": "flutter_lints",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-6.0.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-6.0.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.8"
+     },
+     {
+       "name": "flutter_test",
+-      "rootUri": "file:///C:/Users/asus/Downloads/flutter/packages/flutter_test",
++      "rootUri": "file:///C:/src/flutter/packages/flutter_test",
+       "packageUri": "lib/",
+       "languageVersion": "3.11"
+     },
+     {
+       "name": "flutter_web_plugins",
+-      "rootUri": "file:///C:/Users/asus/Downloads/flutter/packages/flutter_web_plugins",
++      "rootUri": "file:///C:/src/flutter/packages/flutter_web_plugins",
+       "packageUri": "lib/",
+       "languageVersion": "3.11"
+     },
+     {
+       "name": "html",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/html-0.15.7",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/html-0.15.7",
+       "packageUri": "lib/",
+       "languageVersion": "3.6"
+     },
+     {
++      "name": "http",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/http-1.6.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.4"
++    },
++    {
++      "name": "http_parser",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/http_parser-4.1.2",
++      "packageUri": "lib/",
++      "languageVersion": "3.4"
++    },
++    {
+       "name": "leak_tracker",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-11.0.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-11.0.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.2"
+     },
+     {
+       "name": "leak_tracker_flutter_testing",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker_flutter_testing-3.0.10",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker_flutter_testing-3.0.10",
+       "packageUri": "lib/",
+       "languageVersion": "3.2"
+     },
+     {
+       "name": "leak_tracker_testing",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker_testing-3.0.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker_testing-3.0.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.2"
+     },
+     {
+       "name": "lints",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/lints-6.1.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/lints-6.1.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.8"
+     },
+     {
+       "name": "matcher",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/matcher-0.12.20",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/matcher-0.12.20",
+       "packageUri": "lib/",
+       "languageVersion": "3.10"
+     },
+     {
+       "name": "material_color_utilities",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/material_color_utilities-0.13.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/material_color_utilities-0.13.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.5"
+     },
+     {
+       "name": "meta",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.18.3",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.18.3",
+       "packageUri": "lib/",
+       "languageVersion": "3.5"
+     },
+     {
+       "name": "path",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.1",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.1",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+     {
+       "name": "plugin_platform_interface",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8",
+       "packageUri": "lib/",
+       "languageVersion": "3.0"
+     },
+     {
+       "name": "sky_engine",
+-      "rootUri": "file:///C:/Users/asus/Downloads/flutter/bin/cache/pkg/sky_engine",
++      "rootUri": "file:///C:/src/flutter/bin/cache/pkg/sky_engine",
+       "packageUri": "lib/",
+       "languageVersion": "3.11"
+     },
+     {
+       "name": "source_span",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/source_span-1.10.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/source_span-1.10.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.1"
+     },
+     {
+       "name": "stack_trace",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/stack_trace-1.12.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/stack_trace-1.12.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+     {
+       "name": "stream_channel",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/stream_channel-2.1.4",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/stream_channel-2.1.4",
+       "packageUri": "lib/",
+       "languageVersion": "3.3"
+     },
+     {
+       "name": "string_scanner",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/string_scanner-1.4.1",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/string_scanner-1.4.1",
+       "packageUri": "lib/",
+       "languageVersion": "3.1"
+     },
+     {
+       "name": "term_glyph",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/term_glyph-1.2.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/term_glyph-1.2.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.1"
+     },
+     {
+       "name": "test_api",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.12",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.12",
+       "packageUri": "lib/",
+       "languageVersion": "3.10"
+     },
+     {
++      "name": "typed_data",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/typed_data-1.4.0",
++      "packageUri": "lib/",
++      "languageVersion": "3.5"
++    },
++    {
+       "name": "vector_math",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.4.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.4.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.10"
+     },
+     {
+       "name": "video_player",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player-2.14.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/video_player-2.14.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.12"
+     },
+     {
+       "name": "video_player_android",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_android-2.12.2",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_android-2.12.2",
+       "packageUri": "lib/",
+       "languageVersion": "3.12"
+     },
+     {
+       "name": "video_player_avfoundation",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_avfoundation-2.12.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_avfoundation-2.12.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.10"
+     },
+     {
+       "name": "video_player_platform_interface",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_platform_interface-6.9.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_platform_interface-6.9.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.10"
+     },
+     {
+       "name": "video_player_web",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_web-2.4.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/video_player_web-2.4.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.6"
+     },
+     {
+       "name": "vm_service",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vm_service-15.3.0",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/vm_service-15.3.0",
+       "packageUri": "lib/",
+       "languageVersion": "3.5"
+     },
+     {
+       "name": "web",
+-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/web-1.1.1",
++      "rootUri": "file:///C:/Users/yosep/AppData/Local/Pub/Cache/hosted/pub.dev/web-1.1.1",
+       "packageUri": "lib/",
+       "languageVersion": "3.4"
+     },
+@@ -232,7 +310,7 @@
+   ],
+   "generator": "pub",
+   "generatorVersion": "3.13.3",
+-  "flutterRoot": "file:///C:/Users/asus/Downloads/flutter",
+-  "flutterVersion": "3.47.3",
+-  "pubCache": "file:///C:/Users/asus/AppData/Local/Pub/Cache"
++  "flutterRoot": "file:///C:/src/flutter",
++  "flutterVersion": "3.47.4",
++  "pubCache": "file:///C:/Users/yosep/AppData/Local/Pub/Cache"
+ }
+Index: .dart_tool/package_graph.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\r\n  \"roots\": [\r\n    \"app_u_track\"\r\n  ],\r\n  \"packages\": [\r\n    {\r\n      \"name\": \"app_u_track\",\r\n      \"version\": \"1.0.0+1\",\r\n      \"dependencies\": [\r\n        \"cupertino_icons\",\r\n        \"flutter\",\r\n        \"video_player\"\r\n      ],\r\n      \"devDependencies\": [\r\n        \"flutter_lints\",\r\n        \"flutter_test\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"flutter_lints\",\r\n      \"version\": \"6.0.0\",\r\n      \"dependencies\": [\r\n        \"lints\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"flutter_test\",\r\n      \"version\": \"0.0.0\",\r\n      \"dependencies\": [\r\n        \"clock\",\r\n        \"collection\",\r\n        \"fake_async\",\r\n        \"flutter\",\r\n        \"leak_tracker_flutter_testing\",\r\n        \"matcher\",\r\n        \"meta\",\r\n        \"path\",\r\n        \"stack_trace\",\r\n        \"stream_channel\",\r\n        \"test_api\",\r\n        \"vector_math\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"video_player\",\r\n      \"version\": \"2.14.0\",\r\n      \"dependencies\": [\r\n        \"collection\",\r\n        \"flutter\",\r\n        \"html\",\r\n        \"video_player_android\",\r\n        \"video_player_avfoundation\",\r\n        \"video_player_platform_interface\",\r\n        \"video_player_web\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"cupertino_icons\",\r\n      \"version\": \"1.0.9\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"flutter\",\r\n      \"version\": \"0.0.0\",\r\n      \"dependencies\": [\r\n        \"characters\",\r\n        \"collection\",\r\n        \"material_color_utilities\",\r\n        \"meta\",\r\n        \"sky_engine\",\r\n        \"vector_math\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"lints\",\r\n      \"version\": \"6.1.0\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"stream_channel\",\r\n      \"version\": \"2.1.4\",\r\n      \"dependencies\": [\r\n        \"async\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"meta\",\r\n      \"version\": \"1.18.3\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"collection\",\r\n      \"version\": \"1.19.1\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"leak_tracker_flutter_testing\",\r\n      \"version\": \"3.0.10\",\r\n      \"dependencies\": [\r\n        \"flutter\",\r\n        \"leak_tracker\",\r\n        \"leak_tracker_testing\",\r\n        \"matcher\",\r\n        \"meta\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"vector_math\",\r\n      \"version\": \"2.4.0\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"stack_trace\",\r\n      \"version\": \"1.12.2\",\r\n      \"dependencies\": [\r\n        \"path\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"clock\",\r\n      \"version\": \"1.1.3\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"fake_async\",\r\n      \"version\": \"1.3.3\",\r\n      \"dependencies\": [\r\n        \"clock\",\r\n        \"collection\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"path\",\r\n      \"version\": \"1.9.1\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"matcher\",\r\n      \"version\": \"0.12.20\",\r\n      \"dependencies\": [\r\n        \"async\",\r\n        \"meta\",\r\n        \"stack_trace\",\r\n        \"term_glyph\",\r\n        \"test_api\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"test_api\",\r\n      \"version\": \"0.7.12\",\r\n      \"dependencies\": [\r\n        \"async\",\r\n        \"boolean_selector\",\r\n        \"collection\",\r\n        \"meta\",\r\n        \"source_span\",\r\n        \"stack_trace\",\r\n        \"stream_channel\",\r\n        \"string_scanner\",\r\n        \"term_glyph\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"video_player_web\",\r\n      \"version\": \"2.4.0\",\r\n      \"dependencies\": [\r\n        \"flutter\",\r\n        \"flutter_web_plugins\",\r\n        \"video_player_platform_interface\",\r\n        \"web\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"video_player_platform_interface\",\r\n      \"version\": \"6.9.0\",\r\n      \"dependencies\": [\r\n        \"flutter\",\r\n        \"plugin_platform_interface\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"video_player_avfoundation\",\r\n      \"version\": \"2.12.0\",\r\n      \"dependencies\": [\r\n        \"flutter\",\r\n        \"meta\",\r\n        \"video_player_platform_interface\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"video_player_android\",\r\n      \"version\": \"2.12.2\",\r\n      \"dependencies\": [\r\n        \"flutter\",\r\n        \"meta\",\r\n        \"video_player_platform_interface\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"html\",\r\n      \"version\": \"0.15.7\",\r\n      \"dependencies\": [\r\n        \"csslib\",\r\n        \"source_span\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"sky_engine\",\r\n      \"version\": \"0.0.0\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"material_color_utilities\",\r\n      \"version\": \"0.13.0\",\r\n      \"dependencies\": [\r\n        \"collection\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"characters\",\r\n      \"version\": \"1.4.1\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"async\",\r\n      \"version\": \"2.13.1\",\r\n      \"dependencies\": [\r\n        \"collection\",\r\n        \"meta\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"leak_tracker_testing\",\r\n      \"version\": \"3.0.2\",\r\n      \"dependencies\": [\r\n        \"leak_tracker\",\r\n        \"matcher\",\r\n        \"meta\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"leak_tracker\",\r\n      \"version\": \"11.0.2\",\r\n      \"dependencies\": [\r\n        \"clock\",\r\n        \"collection\",\r\n        \"meta\",\r\n        \"path\",\r\n        \"vm_service\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"term_glyph\",\r\n      \"version\": \"1.2.2\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"string_scanner\",\r\n      \"version\": \"1.4.1\",\r\n      \"dependencies\": [\r\n        \"source_span\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"source_span\",\r\n      \"version\": \"1.10.2\",\r\n      \"dependencies\": [\r\n        \"collection\",\r\n        \"path\",\r\n        \"term_glyph\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"boolean_selector\",\r\n      \"version\": \"2.1.2\",\r\n      \"dependencies\": [\r\n        \"source_span\",\r\n        \"string_scanner\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"web\",\r\n      \"version\": \"1.1.1\",\r\n      \"dependencies\": []\r\n    },\r\n    {\r\n      \"name\": \"flutter_web_plugins\",\r\n      \"version\": \"0.0.0\",\r\n      \"dependencies\": [\r\n        \"flutter\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"plugin_platform_interface\",\r\n      \"version\": \"2.1.8\",\r\n      \"dependencies\": [\r\n        \"meta\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"csslib\",\r\n      \"version\": \"1.0.2\",\r\n      \"dependencies\": [\r\n        \"source_span\"\r\n      ]\r\n    },\r\n    {\r\n      \"name\": \"vm_service\",\r\n      \"version\": \"15.3.0\",\r\n      \"dependencies\": []\r\n    }\r\n  ],\r\n  \"configVersion\": 1\r\n}
+===================================================================
+diff --git a/.dart_tool/package_graph.json b/.dart_tool/package_graph.json
+--- a/.dart_tool/package_graph.json	(revision f951577b29b8bff31cd44b9c6da298556402a48a)
++++ b/.dart_tool/package_graph.json	(date 1790425880153)
+@@ -7,7 +7,10 @@
+       "name": "app_u_track",
+       "version": "1.0.0+1",
+       "dependencies": [
++        "cloud_firestore",
+         "cupertino_icons",
++        "firebase_auth",
++        "firebase_core",
+         "flutter",
+         "video_player"
+       ],
+@@ -42,6 +45,41 @@
+       ]
+     },
+     {
++      "name": "firebase_auth",
++      "version": "6.7.0",
++      "dependencies": [
++        "firebase_auth_platform_interface",
++        "firebase_auth_web",
++        "firebase_core",
++        "firebase_core_platform_interface",
++        "flutter",
++        "meta"
++      ]
++    },
++    {
++      "name": "cloud_firestore",
++      "version": "6.10.0",
++      "dependencies": [
++        "cloud_firestore_platform_interface",
++        "cloud_firestore_web",
++        "collection",
++        "firebase_core",
++        "firebase_core_platform_interface",
++        "flutter",
++        "meta"
++      ]
++    },
++    {
++      "name": "firebase_core",
++      "version": "4.15.0",
++      "dependencies": [
++        "firebase_core_platform_interface",
++        "firebase_core_web",
++        "flutter",
++        "meta"
++      ]
++    },
++    {
+       "name": "video_player",
+       "version": "2.14.0",
+       "dependencies": [
+@@ -161,6 +199,77 @@
+       ]
+     },
+     {
++      "name": "firebase_core_platform_interface",
++      "version": "8.1.1",
++      "dependencies": [
++        "collection",
++        "flutter",
++        "meta",
++        "plugin_platform_interface"
++      ]
++    },
++    {
++      "name": "firebase_auth_web",
++      "version": "6.3.0",
++      "dependencies": [
++        "firebase_auth_platform_interface",
++        "firebase_core",
++        "firebase_core_web",
++        "flutter",
++        "flutter_web_plugins",
++        "http_parser",
++        "meta",
++        "web"
++      ]
++    },
++    {
++      "name": "firebase_auth_platform_interface",
++      "version": "9.1.0",
++      "dependencies": [
++        "_flutterfire_internals",
++        "collection",
++        "firebase_core",
++        "flutter",
++        "http",
++        "meta",
++        "plugin_platform_interface"
++      ]
++    },
++    {
++      "name": "cloud_firestore_web",
++      "version": "5.7.3",
++      "dependencies": [
++        "_flutterfire_internals",
++        "cloud_firestore_platform_interface",
++        "collection",
++        "firebase_core",
++        "firebase_core_web",
++        "flutter",
++        "flutter_web_plugins"
++      ]
++    },
++    {
++      "name": "cloud_firestore_platform_interface",
++      "version": "8.0.7",
++      "dependencies": [
++        "_flutterfire_internals",
++        "collection",
++        "firebase_core",
++        "flutter",
++        "meta",
++        "plugin_platform_interface"
++      ]
++    },
++    {
++      "name": "firebase_core_web",
++      "version": "3.12.0",
++      "dependencies": [
++        "firebase_core_platform_interface",
++        "meta",
++        "web"
++      ]
++    },
++    {
+       "name": "video_player_web",
+       "version": "2.4.0",
+       "dependencies": [
+@@ -279,11 +388,28 @@
+       ]
+     },
+     {
++      "name": "plugin_platform_interface",
++      "version": "2.1.8",
++      "dependencies": [
++        "meta"
++      ]
++    },
++    {
+       "name": "web",
+       "version": "1.1.1",
+       "dependencies": []
+     },
+     {
++      "name": "http_parser",
++      "version": "4.1.2",
++      "dependencies": [
++        "collection",
++        "source_span",
++        "string_scanner",
++        "typed_data"
++      ]
++    },
++    {
+       "name": "flutter_web_plugins",
+       "version": "0.0.0",
+       "dependencies": [
+@@ -291,9 +417,23 @@
+       ]
+     },
+     {
+-      "name": "plugin_platform_interface",
+-      "version": "2.1.8",
++      "name": "http",
++      "version": "1.6.0",
++      "dependencies": [
++        "async",
++        "http_parser",
++        "meta",
++        "web"
++      ]
++    },
++    {
++      "name": "_flutterfire_internals",
++      "version": "1.3.77",
+       "dependencies": [
++        "collection",
++        "firebase_core",
++        "firebase_core_platform_interface",
++        "flutter",
+         "meta"
+       ]
+     },
+@@ -308,6 +448,13 @@
+       "name": "vm_service",
+       "version": "15.3.0",
+       "dependencies": []
++    },
++    {
++      "name": "typed_data",
++      "version": "1.4.0",
++      "dependencies": [
++        "collection"
++      ]
+     }
+   ],
+   "configVersion": 1
