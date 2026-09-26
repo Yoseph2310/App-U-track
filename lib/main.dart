@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/dev_menu_screen.dart'; // TEMPORAL, borrar esta línea después
+import 'features/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +23,7 @@ class UTrackApp extends StatelessWidget {
       title: 'U-Track',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const DevMenuScreen(), // TEMPORAL, volver a SplashScreen() para ver el splash y el login
+      home: const HomeScreen(), // TEMPORAL, volver a SplashScreen() para ver el splash y el login
     );
   }
 }
