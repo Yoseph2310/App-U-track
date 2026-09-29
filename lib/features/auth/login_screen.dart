@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'register_screen.dart';
+import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 60),
 
-              // Logo + título
               Center(
                 child: Column(
                   children: [
@@ -61,12 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 48),
 
-              // Botón Google
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: () {}, // lógica Firebase después
+                  onPressed: () {},
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.border),
                     backgroundColor: AppColors.surface,
@@ -77,13 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Ícono G de Google con colores reales
                       RichText(
                         text: const TextSpan(
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                           children: [
                             TextSpan(text: 'G', style: TextStyle(color: Color(0xFF4285F4))),
                           ],
@@ -104,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Divisor
               Row(
                 children: [
                   const Expanded(child: Divider(color: AppColors.border)),
@@ -118,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Email
               Text('Correo institucional', style: AppTextStyles.label),
               const SizedBox(height: 8),
               TextField(
@@ -132,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // Contraseña
               Text('Contraseña', style: AppTextStyles.label),
               const SizedBox(height: 8),
               TextField(
@@ -168,19 +160,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // Botón ingresar
+              // Botón ingresar → navega al Home (provisional)
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  ),
                   child: const Text('Ingresar'),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Registro
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
