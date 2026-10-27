@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
-
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
@@ -14,8 +14,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  final _authService = AuthService();
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -26,15 +28,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  Future<void> _register() async {
+    // Validación local antes de llamar a Firebase
+    if (_nameController.text.trim().isEmpty) {
+      setState(() => _errorMessage = 'Ingresa tu nombre.');
+      return;
+    }
+    if (_passwordController.text != _confirmController.text) {
+      setState(() => _errorMessage = 'Las contraseñas no coinciden.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final error = await _authService.register(
+      _emailController.text.trim(),
+      _passwordController.text,
+      _nameController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      setState(() => _errorMessage = error);
+    }
+    // Si error == null, Firebase cambia el authState y navega solo
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.textMain),
+          icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -44,102 +78,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
-
+              const SizedBox(height: 16),
               Text('Crear cuenta', style: AppTextStyles.headline1),
-              const SizedBox(height: 4),
-              Text('Ingresa tus datos para comenzar', style: AppTextStyles.body2),
-
-              const SizedBox(height: 32),
-
-              // Google
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.border),
-                    backgroundColor: AppColors.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      RichText(
-                        text: const TextSpan(
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          children: [
-                            TextSpan(text: 'G', style: TextStyle(color: Color(0xFF4285F4))),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Registrarse con Google',
-                        style: AppTextStyles.body1.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textMain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: AppColors.border)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('o', style: AppTextStyles.caption),
-                  ),
-                  const Expanded(child: Divider(color: AppColors.border)),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Nombre
-              Text('Nombre completo', style: AppTextStyles.label),
               const SizedBox(height: 8),
+              Text('Únete a U-Track', style: AppTextStyles.body2),
+              const SizedBox(height: 32),
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  hintText: 'Tu nombre',
-                  prefixIcon: Icon(Icons.person_outline),
+                  labelText: 'Nombre completo',
+                  prefixIcon: Icon(Icons.person_outlined),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Email
-              Text('Correo institucional', style: AppTextStyles.label),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  hintText: 'usuario@universidad.edu.co',
+                  labelText: 'Correo electrónico',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Contraseña
-              Text('Contraseña', style: AppTextStyles.label),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
-                  hintText: '••••••••',
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  labelText: 'Contraseña',
+                  prefixIcon: const Icon(Icons.lock_outlined),
                   suffixIcon: IconButton(
                     icon: Icon(_obscurePassword
                         ? Icons.visibility_outlined
@@ -149,58 +115,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Confirmar contraseña
-              Text('Confirmar contraseña', style: AppTextStyles.label),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextField(
                 controller: _confirmController,
-                obscureText: _obscureConfirm,
-                decoration: InputDecoration(
-                  hintText: '••••••••',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirm
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirmar contraseña',
+                  prefixIcon: Icon(Icons.lock_outlined),
                 ),
               ),
 
-              const SizedBox(height: 32),
+              // Mensaje de error
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ),
 
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('Crear cuenta'),
+                  onPressed: _isLoading ? null : _register,
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                      : const Text('Registrarse'),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('¿Ya tienes cuenta? ', style: AppTextStyles.body2),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Inicia sesión',
-                        style: AppTextStyles.label.copyWith(color: AppColors.primary),
-                      ),
-                    ),
-                  ],
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('¿Ya tienes cuenta? Inicia sesión'),
                 ),
               ),
-
-              const SizedBox(height: 24),
             ],
           ),
         ),
