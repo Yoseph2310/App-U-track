@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/services/subject_service.dart';
+import '../../core/services/task_service.dart';
 import '../subjects/screens/subjects_screen.dart';
 import '../tasks/screens/grade_calculator_screen.dart';
 import '../tasks/screens/create_edit_task_screen.dart';
@@ -14,10 +18,36 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _subjectService = SubjectService();
+  final _taskService = TaskService();
   int _currentIndex = 0;
+
+  // Nombre e inicial del usuario
+  String get _userName {
+    final name = FirebaseAuth.instance.currentUser?.displayName;
+    if (name != null && name.isNotEmpty) return name.split(' ').first;
+    return 'Estudiante';
+  }
+
+  String get _userInitial {
+    final name = FirebaseAuth.instance.currentUser?.displayName;
+    if (name != null && name.isNotEmpty) return name[0].toUpperCase();
+    return 'U';
+  }
+
+  // Fecha de hoy en español
+  String get _todayLabel {
+    const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    const meses = ['enero','febrero','marzo','abril','mayo','junio',
+      'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    final now = DateTime.now();
+    return '${dias[now.weekday - 1]}, ${now.day} de ${meses[now.month - 1]}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -35,16 +65,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hola, Esteban 👋', style: AppTextStyles.headline2),
+                      Text('Hola, $_userName 👋', style: AppTextStyles.headline2),
                       const SizedBox(height: 2),
-                      Text('Viernes, 26 de septiembre', style: AppTextStyles.body2),
+                      Text(_todayLabel, style: AppTextStyles.body2),
                     ],
                   ),
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: AppColors.primary,
                     child: Text(
-                      'D',
+                      _userInitial,
                       style: AppTextStyles.headline3.copyWith(color: Colors.white),
                     ),
                   ),
@@ -53,26 +83,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 28),
 
-              // TARJETAS DE RESUMEN
+              // TARJETAS DE RESUMEN — datos reales
               Row(
                 children: [
-                  _SummaryCard(
-                    label: 'Materias',
-                    value: '6',
-                    icon: Icons.book_outlined,
-                    color: AppColors.primary,
+                  // Materias
+                  StreamBuilder<int>(
+                    stream: _subjectService.getSubjectCount(),
+                    builder: (context, snap) => _SummaryCard(
+                      label: 'Materias',
+                      value: '${snap.data ?? 0}',
+                      icon: Icons.book_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  _SummaryCard(
-                    label: 'Pendientes',
-                    value: '4',
-                    icon: Icons.assignment_outlined,
-                    color: AppColors.secondary,
+                  // Pendientes
+                  StreamBuilder<int>(
+                    stream: _taskService.getPendingCount(),
+                    builder: (context, snap) => _SummaryCard(
+                      label: 'Pendientes',
+                      value: '${snap.data ?? 0}',
+                      icon: Icons.assignment_outlined,
+                      color: AppColors.secondary,
+                    ),
                   ),
                   const SizedBox(width: 12),
+                  // Próximo examen (estático por ahora)
                   _SummaryCard(
                     label: 'Próx. examen',
-                    value: '3d',
+                    value: '--',
                     icon: Icons.event_outlined,
                     color: AppColors.warnText,
                   ),
@@ -89,108 +128,79 @@ class _HomeScreenState extends State<HomeScreen> {
                   _QuickAction(
                     icon: Icons.add_circle_outline,
                     label: 'Nueva\nmateria',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Toca el botón + dentro de Materias para agregar una nueva',
-                          ),
-                        ),
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SubjectsScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const SubjectsScreen())),
                   ),
                   const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.grade_outlined,
                     label: 'Registrar\nnota',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Selecciona una materia y entra ahí para registrar la nota manualmente',
-                          ),
-                        ),
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SubjectsScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const SubjectsScreen())),
                   ),
                   const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.calculate_outlined,
                     label: 'Calculadora',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GradeCalculatorScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const GradeCalculatorScreen())),
                   ),
                   const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.task_alt_outlined,
                     label: 'Nueva\ntarea',
-                    onTap: () {
-                      Navigator.push(
-                        context,
+                    onTap: () => Navigator.push(context,
                         MaterialPageRoute(
-                          builder: (context) => const CreateEditTaskScreen(
-                            userId: 'test-user',
-                          ),
-                        ),
-                      );
-                    },
+                            builder: (_) => CreateEditTaskScreen(userId: userId))),
                   ),
                 ],
               ),
 
               const SizedBox(height: 32),
 
-              // PRÓXIMAS ENTREGAS
+              // PRÓXIMAS ENTREGAS — datos reales
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Próximas entregas', style: AppTextStyles.headline3),
                   TextButton(
                     onPressed: () {},
-                    child: Text(
-                      'Ver todo',
-                      style: AppTextStyles.label.copyWith(color: AppColors.primary),
-                    ),
+                    child: Text('Ver todo',
+                        style: AppTextStyles.label.copyWith(color: AppColors.primary)),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
 
-              _DeliveryItem(
-                subject: 'Ingeniería Clínica',
-                task: 'Informe laboratorio EEG',
-                daysLeft: 1,
-                isUrgent: true,
-              ),
-              _DeliveryItem(
-                subject: 'Análisis de Algoritmos',
-                task: 'Taller complejidad computacional',
-                daysLeft: 3,
-                isUrgent: false,
-              ),
-              _DeliveryItem(
-                subject: 'Diseño de Dispositivos',
-                task: 'Avance plantilla instrumentada',
-                daysLeft: 5,
-                isUrgent: false,
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _taskService.getUpcomingTasks(),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final tasks = snap.data ?? [];
+                  if (tasks.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text('No tienes entregas próximas 🎉',
+                            style: AppTextStyles.body2),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: tasks.map((task) {
+                      final due = (task['dueDate'] as Timestamp).toDate();
+                      final daysLeft = due.difference(DateTime.now()).inDays;
+                      return _DeliveryItem(
+                        subject: task['subjectName'] ?? '',
+                        task: task['title'] ?? '',
+                        daysLeft: daysLeft,
+                        isUrgent: daysLeft <= 1,
+                      );
+                    }).toList(),
+                  );
+                },
               ),
 
               const SizedBox(height: 32),
@@ -206,78 +216,35 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: AppColors.textSecondary,
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-
         onTap: (index) {
           if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SubjectsScreen(
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => SubjectsScreen(
                   onInicio: () => Navigator.pop(context),
-                  onCalculadora: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GradeCalculatorScreen(),
-                      ),
-                    );
-                  },
-                  onConfiguracion: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
+                  onCalculadora: () => Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (_) => const GradeCalculatorScreen())),
+                  onConfiguracion: () => Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                )));
             return;
           }
-
           if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const GradeCalculatorScreen(),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const GradeCalculatorScreen()));
             return;
           }
-
           if (index == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SettingsScreen(),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const SettingsScreen()));
             return;
           }
-
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
         },
-
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            label: 'Materias',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate_outlined),
-            label: 'Calculadora',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            label: 'Configuración',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Inicio'),
+          BottomNavigationBarItem(icon: Icon(Icons.book_outlined), label: 'Materias'),
+          BottomNavigationBarItem(icon: Icon(Icons.calculate_outlined), label: 'Calculadora'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Configuración'),
         ],
       ),
     );
@@ -291,12 +258,8 @@ class _SummaryCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+  const _SummaryCard({required this.label, required this.value,
+    required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -345,11 +308,8 @@ class _QuickAction extends StatelessWidget {
             children: [
               Icon(icon, color: AppColors.primary, size: 24),
               const SizedBox(height: 6),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.caption.copyWith(color: AppColors.primary),
-              ),
+              Text(label, textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
             ],
           ),
         ),
@@ -365,12 +325,8 @@ class _DeliveryItem extends StatelessWidget {
   final int daysLeft;
   final bool isUrgent;
 
-  const _DeliveryItem({
-    required this.subject,
-    required this.task,
-    required this.daysLeft,
-    required this.isUrgent,
-  });
+  const _DeliveryItem({required this.subject, required this.task,
+    required this.daysLeft, required this.isUrgent});
 
   @override
   Widget build(BuildContext context) {
@@ -387,8 +343,7 @@ class _DeliveryItem extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 4,
-            height: 40,
+            width: 4, height: 40,
             decoration: BoxDecoration(
               color: isUrgent ? AppColors.errorText : AppColors.primary,
               borderRadius: BorderRadius.circular(4),
@@ -412,7 +367,7 @@ class _DeliveryItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${daysLeft}d',
+              daysLeft == 0 ? 'Hoy' : '${daysLeft}d',
               style: AppTextStyles.caption.copyWith(
                 color: isUrgent ? AppColors.errorText : AppColors.okText,
               ),
