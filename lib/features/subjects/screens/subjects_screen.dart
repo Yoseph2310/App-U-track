@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../tasks/services/subject_service.dart';
 import 'subject_detail_screen.dart';
 import 'subject_form_screen.dart';
+import '../../tasks/services/grade_service.dart';
 
 class Materia {
   final String id;
@@ -12,6 +13,7 @@ class Materia {
   final String profesor;
   final String iniciales;
   final double nota;
+  final List<Map<String, dynamic>> esquemaEvaluacion;
 
   const Materia({
     required this.id,
@@ -19,6 +21,7 @@ class Materia {
     required this.profesor,
     required this.iniciales,
     required this.nota,
+    required this.esquemaEvaluacion,
   });
 }
 
@@ -92,9 +95,18 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
       if (!mounted) return;
 
-      setState(() {
-        _materias = subjects.map((subject) {
-          return Materia(
+
+      final gradeService = GradeService();
+      final materiasActualizadas = <Materia>[];
+
+      for (final subject in subjects) {
+        final notaCalculada = await gradeService.calculateWeightedGrade(
+          userId,
+          subject.id ?? '',
+        );
+
+        materiasActualizadas.add(
+          Materia(
             id: subject.id ?? '',
             nombre: subject.name,
             profesor: subject.teacher ?? 'Sin profesor asignado',
@@ -104,12 +116,19 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                 .take(2)
                 .map((word) => word[0].toUpperCase())
                 .join(),
-            nota: subject.currentGrade,
-          );
-        }).toList();
+            nota: notaCalculada,
+            esquemaEvaluacion: subject.evaluationScheme,
+          ),
+        );
+      }
 
+      if (!mounted) return;
+
+      setState(() {
+        _materias = materiasActualizadas;
         _isLoading = false;
       });
+
     } catch (e) {
       if (!mounted) return;
 
@@ -250,6 +269,123 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     );
   }
 
+  Future<void> _editarMateria(Materia materia) async {
+    final userId = _userId;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes iniciar sesión para editar materias.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final subject = await _subjectService.getSubject(
+        userId,
+        materia.id,
+      );
+
+      if (!mounted) return;
+
+      if (subject == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se encontró la materia seleccionada.'),
+          ),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SubjectFormScreen(
+            materia: subject,
+          ),
+        ),
+      );
+
+      if (mounted) {
+        await _loadMaterias();
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo abrir la materia para editarla.'),
+        ),
+      );
+    }
+  }
+
+
+  Future<void> _eliminarMateria(Materia materia) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar materia'),
+        content: Text(
+          '¿Estás seguro de que deseas eliminar "${materia.nombre}"? '
+              'También se eliminarán sus notas registradas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    final userId = _userId;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes iniciar sesión para eliminar materias.'),
+        ),
+      );
+      return;
+    }
+
+    final eliminado = await _subjectService.deleteSubject(
+      userId,
+      materia.id,
+    );
+
+    if (!mounted) return;
+
+    if (eliminado) {
+      await _loadMaterias();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Materia eliminada correctamente.'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo eliminar la materia.'),
+        ),
+      );
+    }
+  }
+
   Widget _buildMateriaCard(Materia materia) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -260,11 +396,12 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SubjectDetailScreen(
-                subjectId: materia.id,
-                nombreMateria: materia.nombre,
-                notaAcumulada: materia.nota,
-              ),
+                builder: (context) => SubjectDetailScreen(
+                  subjectId: materia.id,
+                  nombreMateria: materia.nombre,
+                  notaAcumulada: materia.nota,
+                  esquemaEvaluacion: materia.esquemaEvaluacion,
+                ),
             ),
           ).then((_) => _loadMaterias());
         },
@@ -320,22 +457,48 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
               ),
 
               // Nota
-              Text(
-                materia.nota.toStringAsFixed(1),
-                style: TextStyle(
-                  color: _colorNota(materia.nota),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
+
+// Botón para eliminar la materia
+          IconButton(
+            tooltip: 'Eliminar materia',
+            onPressed: () => _eliminarMateria(materia),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Colors.red,
+              size: 22,
+            ),
+          ),
+
+              IconButton(
+                tooltip: 'Editar materia',
+                onPressed: () => _editarMateria(materia),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 22,
                 ),
               ),
 
-              const SizedBox(width: 4),
 
-              const Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
+// Nota
+          Text(
+            materia.nota.toStringAsFixed(1),
+            style: TextStyle(
+              color: _colorNota(materia.nota),
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+
+
             ],
           ),
         ),

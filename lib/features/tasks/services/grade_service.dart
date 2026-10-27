@@ -16,10 +16,8 @@ class GradeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Obtiene todas las calificaciones de una materia
-  Future<List<GradeModel>> getGrades(
-    String userId,
-    String subjectId,
-  ) async {
+  Future<List<GradeModel>> getGrades(String userId,
+      String subjectId,) async {
     try {
       final snapshot = await _firestore
           .collection('users')
@@ -40,11 +38,9 @@ class GradeService {
   }
 
   /// Obtiene una calificación específica
-  Future<GradeModel?> getGrade(
-    String userId,
-    String subjectId,
-    String gradeId,
-  ) async {
+  Future<GradeModel?> getGrade(String userId,
+      String subjectId,
+      String gradeId,) async {
     try {
       final doc = await _firestore
           .collection('users')
@@ -60,18 +56,16 @@ class GradeService {
       }
       return null;
     } catch (e) {
-      print('Error obteniendo calificación $e');
-      return null;
+      print('Error obteniendo calificaciones: $e');
+      rethrow;
     }
   }
 
   /// Crea una nueva calificación
   /// Automáticamente recalcula la nota ponderada de la materia
-  Future<String?> createGrade(
-    String userId,
-    String subjectId,
-    GradeModel grade,
-  ) async {
+  Future<String?> createGrade(String userId,
+      String subjectId,
+      GradeModel grade,) async {
     try {
       final docRef = await _firestore
           .collection('users')
@@ -92,11 +86,9 @@ class GradeService {
   }
 
   /// Actualiza una calificación existente
-  Future<bool> updateGrade(
-    String userId,
-    String subjectId,
-    GradeModel grade,
-  ) async {
+  Future<bool> updateGrade(String userId,
+      String subjectId,
+      GradeModel grade,) async {
     if (grade.id == null) return false;
 
     try {
@@ -120,11 +112,9 @@ class GradeService {
   }
 
   /// Elimina una calificación
-  Future<bool> deleteGrade(
-    String userId,
-    String subjectId,
-    String gradeId,
-  ) async {
+  Future<bool> deleteGrade(String userId,
+      String subjectId,
+      String gradeId,) async {
     try {
       await _firestore
           .collection('users')
@@ -147,39 +137,75 @@ class GradeService {
 
   /// Calcula la nota ponderada de una materia
   /// Fórmula nota_final = suma(calificación × peso) / suma(pesos)
-  Future<double> calculateWeightedGrade(
-    String userId,
-    String subjectId,
-  ) async {
+
+
+  Future<double> calculateWeightedGrade(String userId,
+      String subjectId,) async {
     try {
       final grades = await getGrades(userId, subjectId);
 
       if (grades.isEmpty) return 0.0;
 
-      double totalScore = 0;
-      double totalWeight = 0;
+      final subjectDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('subjects')
+          .doc(subjectId)
+          .get();
 
-      for (var grade in grades) {
-        totalScore += grade.score * grade.weight;
-        totalWeight += grade.weight;
+      final subjectData = subjectDoc.data();
+      final rawScheme = subjectData?['evaluationScheme'];
+
+      if (rawScheme is! List || rawScheme.isEmpty) {
+        double totalScore = 0.0;
+
+        for (final grade in grades) {
+          totalScore += grade.score * grade.weight;
+        }
+
+        return totalScore / 100;
       }
 
-      if (totalWeight == 0) return 0.0;
+      double totalScore = 0.0;
 
-      return totalScore / totalWeight;
+      for (final item in rawScheme) {
+        if (item is! Map) continue;
+
+        final cutName = item['name']?.toString() ?? '';
+        final percentage =
+            (item['percentage'] as num?)?.toDouble() ?? 0.0;
+
+        final activities = grades.where(
+              (grade) =>
+          grade.cutName == cutName ||
+              (grade.cutName == null && grade.name == cutName),
+        );
+
+        final activityList = activities.toList();
+
+        if (activityList.isEmpty) continue;
+
+        final average = activityList.fold<double>(
+          0.0,
+              (sum, grade) => sum + grade.score,
+        ) /
+            activityList.length;
+
+        totalScore += average * percentage / 100;
+      }
+
+      return totalScore;
     } catch (e) {
-      print('Error calculando nota ponderada $e');
+      print('Error calculando nota acumulada: $e');
       return 0.0;
     }
   }
 
-  /// Actualiza la calificación ponderada en Firestore
-  Future<void> _recalculateSubjectGrade(
-    String userId,
-    String subjectId,
-  ) async {
+  Future<void> _recalculateSubjectGrade(String userId,
+      String subjectId,) async {
     try {
-      final weightedGrade = await calculateWeightedGrade(userId, subjectId);
+      final weightedGrade =
+      await calculateWeightedGrade(userId, subjectId);
 
       await _firestore
           .collection('users')
@@ -188,67 +214,10 @@ class GradeService {
           .doc(subjectId)
           .update({'currentGrade': weightedGrade});
     } catch (e) {
-      print('Error recalculando nota $e');
-    }
-  }
-
-  /// Stream en tiempo real de calificaciones
-  Stream<List<GradeModel>> getGradesStream(
-    String userId,
-    String subjectId,
-  ) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('subjects')
-        .doc(subjectId)
-        .collection('grades')
-        .orderBy('dateAdded', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GradeModel.fromFirestore(doc))
-            .toList());
-  }
-
-  /// Obtiene estadísticas de calificaciones
-  /// Útil para mostrar promedio, mejor nota, peor nota, etc
-  Future<GradeStats> getGradeStats(
-    String userId,
-    String subjectId,
-  ) async {
-    try {
-      final grades = await getGrades(userId, subjectId);
-
-      if (grades.isEmpty) {
-        return GradeStats(
-          average: 0,
-          highestGrade: 0,
-          lowestGrade: 0,
-          totalGrades: 0,
-        );
-      }
-
-      final scores = grades.map((g) => g.score).toList();
-      scores.sort();
-
-      return GradeStats(
-        average: await calculateWeightedGrade(userId, subjectId),
-        highestGrade: scores.last,
-        lowestGrade: scores.first,
-        totalGrades: grades.length,
-      );
-    } catch (e) {
-      print('Error obteniendo estadísticas $e');
-      return GradeStats(
-        average: 0,
-        highestGrade: 0,
-        lowestGrade: 0,
-        totalGrades: 0,
-      );
+      print('Error recalculando nota: $e');
     }
   }
 }
-
 /// Clase auxiliar para estadísticas de calificaciones
 class GradeStats {
   final double average;
