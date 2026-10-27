@@ -23,7 +23,7 @@ class UTrackApp extends StatelessWidget {
       title: 'U-Track',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const HomeScreen(), // TEMPORAL, volver a SplashScreen() para ver el splash y el login
+      home: const SplashScreen(), // TEMPORAL, volver a SplashScreen() para ver el splash y el login
     );
   }
 }

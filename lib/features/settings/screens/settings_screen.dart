@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Pantalla 9 — Recordatorios / Configuración
@@ -20,11 +21,103 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool notificationsEnabled = true;
+  bool notificationsEnabled = false;
   String reminderAnticipation = '1 día antes';
   String reminderHour = '8:00 AM';
-  bool darkTheme = false;
+  String theme = 'Claro';
   String language = 'Español';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNotificationStatus();
+  }
+
+  Future<void> _checkNotificationStatus() async {
+    // Al entrar a la pantalla revisamos el permiso real del sistema.
+    // La primera vez que se abre la app, el permiso todavía no se ha
+    // pedido, así que esto siempre da "denegado" y el switch queda apagado.
+    final status = await Permission.notification.status;
+    if (!mounted) return;
+    setState(() => notificationsEnabled = status.isGranted);
+  }
+
+  void _showComingSoon(String feature) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$feature próximamente estará disponible')),
+    );
+  }
+
+  Future<void> _pickTheme() async {
+    final options = ['Claro', 'Oscuro'];
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => _OptionsSheet(
+        title: 'Tema',
+        options: options,
+        current: theme,
+      ),
+    );
+    if (selected != null && selected != theme) {
+      _showComingSoon('El tema oscuro');
+    }
+  }
+
+  Future<void> _pickLanguage() async {
+    final options = ['Español', 'Inglés', 'Portugués', 'Francés', 'Alemán'];
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => _OptionsSheet(
+        title: 'Idioma',
+        options: options,
+        current: language,
+      ),
+    );
+    if (selected != null && selected != language) {
+      _showComingSoon('El idioma $selected');
+    }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    if (!value) {
+      // Apagar el interruptor no necesita permiso, solo dejamos de programar avisos
+      setState(() => notificationsEnabled = false);
+      return;
+    }
+
+    final status = await Permission.notification.request();
+
+    if (status.isGranted) {
+      setState(() => notificationsEnabled = true);
+      return;
+    }
+
+    // El usuario negó el permiso (o lo bloqueó antes), dejamos el switch apagado
+    setState(() => notificationsEnabled = false);
+
+    if (!mounted) return;
+
+    if (status.isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Activa las notificaciones desde los ajustes del sistema para recibir recordatorios',
+          ),
+          action: SnackBarAction(
+            label: 'Abrir ajustes',
+            onPressed: openAppSettings,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Necesitas conceder el permiso de notificaciones para activar los recordatorios'),
+        ),
+      );
+    }
+  }
 
   Future<void> _pickAnticipation() async {
     final options = ['1 día antes', '3 días antes', '1 semana antes'];
@@ -137,9 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : '?';
 
     return GestureDetector(
-      onTap: () {
-        // Aquí se abriría la edición de nombre/foto cuando exista esa pantalla
-      },
+      onTap: () => _showComingSoon('Editar tu cuenta'),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -201,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _switchRow(
           label: 'Notificaciones activas',
           value: notificationsEnabled,
-          onChanged: (value) => setState(() => notificationsEnabled = value),
+          onChanged: _toggleNotifications,
         ),
         _divider(),
         _valueRow(
@@ -222,16 +313,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _preferencesCard() {
     return _card(
       children: [
-        _switchRow(
-          label: 'Tema oscuro',
-          value: darkTheme,
-          onChanged: (value) => setState(() => darkTheme = value),
+        _valueRow(
+          label: 'Tema',
+          value: theme,
+          onTap: _pickTheme,
         ),
         _divider(),
         _valueRow(
           label: 'Idioma',
           value: language,
-          onTap: () {},
+          onTap: _pickLanguage,
         ),
       ],
     );
@@ -309,7 +400,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       width: double.infinity,
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: widget.onLogout,
+        onPressed: () {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cerrando sesión (estará disponible próximamente)'),
+            ),
+          );
+        },
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.errorText),
           shape: RoundedRectangleBorder(

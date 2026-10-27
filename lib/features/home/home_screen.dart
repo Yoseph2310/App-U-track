@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../subjects/screens/subjects_screen.dart';
+import '../tasks/screens/grade_calculator_screen.dart';
+import '../tasks/screens/create_edit_task_screen.dart';
+import '../settings/screens/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hola, Danna 👋', style: AppTextStyles.headline2),
+                      Text('Hola, Esteban 👋', style: AppTextStyles.headline2),
                       const SizedBox(height: 2),
                       Text('Viernes, 26 de septiembre', style: AppTextStyles.body2),
                     ],
@@ -83,13 +86,73 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _QuickAction(icon: Icons.add_circle_outline, label: 'Nueva\nmateria'),
+                  _QuickAction(
+                    icon: Icons.add_circle_outline,
+                    label: 'Nueva\nmateria',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Toca el botón + dentro de Materias para agregar una nueva',
+                          ),
+                        ),
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SubjectsScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(width: 12),
-                  _QuickAction(icon: Icons.grade_outlined, label: 'Registrar\nnota'),
+                  _QuickAction(
+                    icon: Icons.grade_outlined,
+                    label: 'Registrar\nnota',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Selecciona una materia y entra ahí para registrar la nota manualmente',
+                          ),
+                        ),
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SubjectsScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(width: 12),
-                  _QuickAction(icon: Icons.calculate_outlined, label: 'Calculadora'),
+                  _QuickAction(
+                    icon: Icons.calculate_outlined,
+                    label: 'Calculadora',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GradeCalculatorScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(width: 12),
-                  _QuickAction(icon: Icons.task_alt_outlined, label: 'Nueva\ntarea'),
+                  _QuickAction(
+                    icon: Icons.task_alt_outlined,
+                    label: 'Nueva\ntarea',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CreateEditTaskScreen(
+                            userId: 'test-user',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
 
@@ -149,7 +212,45 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const SubjectsScreen(),
+                builder: (context) => SubjectsScreen(
+                  onInicio: () => Navigator.pop(context),
+                  onCalculadora: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GradeCalculatorScreen(),
+                      ),
+                    );
+                  },
+                  onConfiguracion: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+            return;
+          }
+
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const GradeCalculatorScreen(),
+              ),
+            );
+            return;
+          }
+
+          if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SettingsScreen(),
               ),
             );
             return;
@@ -225,14 +326,15 @@ class _SummaryCard extends StatelessWidget {
 class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
-  const _QuickAction({required this.icon, required this.label});
+  const _QuickAction({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: () {},
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
