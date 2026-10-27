@@ -1,17 +1,19 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Modelo de Calificación/Nota
-///
-/// Representa una calificación individual de una materia (ej. Parcial 1, Quiz, etc).
-/// Se almacena en Firestore en 'users/{userId}/subjects/{subjectId}/grades'
+// Modelo de Calificación/Nota
+// Representa una actividad evaluada dentro de un corte de una materia.
 class GradeModel {
-  final String? id;                    // ID del documento
-  final String subjectId;              // Referencia a la materia
-  final String name;                   // Ej. "Parcial 1", "Quiz", "Examen final"
-  final double score;                  // Calificación (0 a 5)
-  final double weight;                 // Peso o porcentaje de la nota
-  final DateTime dateAdded;            // Cuándo se registró
-  final String? notes;                 // Notas adicionales (opcional)
+  final String? id;
+  final String subjectId;
+  final String name;
+  final double score;
+  final double weight;
+  final DateTime dateAdded;
+  final String? notes;
+
+  // Identifica el corte al que pertenece la actividad.
+  final String? cutName;
 
   GradeModel({
     this.id,
@@ -21,9 +23,10 @@ class GradeModel {
     required this.weight,
     required this.dateAdded,
     this.notes,
+    this.cutName,
   });
 
-  /// Convierte el modelo a un Map para guardar en Firestore
+  // Convierte el modelo a un Map para guardar en Firestore.
   Map<String, dynamic> toMap() {
     return {
       'subjectId': subjectId,
@@ -32,10 +35,11 @@ class GradeModel {
       'weight': weight,
       'dateAdded': Timestamp.fromDate(dateAdded),
       'notes': notes,
+      'cutName': cutName,
     };
   }
 
-  /// Crea un GradeModel desde un documento de Firestore
+  // Crea un GradeModel desde un documento de Firestore.
   factory GradeModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -43,14 +47,17 @@ class GradeModel {
       id: doc.id,
       subjectId: data['subjectId'] ?? '',
       name: data['name'] ?? '',
-      score: (data['score'] ?? 0.0).toDouble(),
-      weight: (data['weight'] ?? 0.0).toDouble(),
-      dateAdded: (data['dateAdded'] as Timestamp).toDate(),
-      notes: data['notes'],
+      score: (data['score'] as num? ?? 0).toDouble(),
+      weight: (data['weight'] as num? ?? 0).toDouble(),
+      dateAdded: data['dateAdded'] is Timestamp
+          ? (data['dateAdded'] as Timestamp).toDate()
+          : DateTime.now(),
+      notes: data['notes'] as String?,
+      cutName: data['cutName'] as String?,
     );
   }
 
-  /// Copia con modificaciones
+  // Copia el modelo con modificaciones.
   GradeModel copyWith({
     String? id,
     String? subjectId,
@@ -59,6 +66,7 @@ class GradeModel {
     double? weight,
     DateTime? dateAdded,
     String? notes,
+    String? cutName,
   }) {
     return GradeModel(
       id: id ?? this.id,
@@ -68,9 +76,11 @@ class GradeModel {
       weight: weight ?? this.weight,
       dateAdded: dateAdded ?? this.dateAdded,
       notes: notes ?? this.notes,
+      cutName: cutName ?? this.cutName,
     );
   }
 
   @override
-  String toString() => 'GradeModel(id: $id, name: $name, score: $score)';
+  String toString() =>
+      'GradeModel(id: $id, name: $name, score: $score, cutName: $cutName)';
 }

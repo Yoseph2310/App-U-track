@@ -28,10 +28,10 @@ class SubjectService {
       return snapshot.docs
           .map((doc) => SubjectModel.fromFirestore(doc))
           .toList();
-    } catch (e) {
-      print('Error obteniendo materias $e');
-      return [];
-    }
+   } catch (e) {
+  print('Error obteniendo materias: $e');
+  rethrow;
+}
   }
 
   /// Obtiene una materia específica

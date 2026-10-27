@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../tasks/services/subject_service.dart';
+import '../../tasks/models/subject_model.dart';
 class CorteEvaluacion {
   final TextEditingController nombreController;
   final TextEditingController porcentajeController;
@@ -21,9 +24,11 @@ class SubjectFormScreen extends StatefulWidget {
   const SubjectFormScreen({
     super.key,
     this.onGuardar,
+    this.materia,
   });
 
   final VoidCallback? onGuardar;
+  final SubjectModel? materia;
 
   @override
   State<SubjectFormScreen> createState() => _SubjectFormScreenState();
@@ -31,6 +36,7 @@ class SubjectFormScreen extends StatefulWidget {
 
 class _SubjectFormScreenState extends State<SubjectFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final SubjectService _subjectService = SubjectService();
 
   final nombreController = TextEditingController();
   final profesorController = TextEditingController();
@@ -39,6 +45,35 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
   final List<CorteEvaluacion> _cortes = [
     CorteEvaluacion(),
   ];
+
+  @override
+  @override
+  void initState() {
+    super.initState();
+
+    final materia = widget.materia;
+
+    if (materia != null) {
+      nombreController.text = materia.name;
+      profesorController.text = materia.teacher ?? '';
+      grupoController.text = materia.classroom ?? '';
+
+      if (materia.evaluationScheme.isNotEmpty) {
+        _cortes.first.dispose();
+        _cortes.clear();
+
+        for (final evaluacion in materia.evaluationScheme) {
+          _cortes.add(
+            CorteEvaluacion(
+              nombre: evaluacion['name']?.toString() ?? '',
+              porcentaje: evaluacion['percentage']?.toString() ?? '',
+            ),
+          );
+        }
+      }
+    }
+  }
+
 
   @override
   void dispose() {
@@ -87,17 +122,106 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
     });
   }
 
-  void _guardar() {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+
+  Future<void> _guardar() async {
+    if (!_formKey.currentState!.validate()) return;
 
     if (!_totalValido) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La suma de los porcentajes debe ser exactamente 100%.',
+          ),
+        ),
+      );
       return;
     }
 
-    widget.onGuardar?.call();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes iniciar sesión para guardar la materia.'),
+        ),
+      );
+      return;
+    }
+
+    final materiaExistente = widget.materia;
+
+
+    final materia = SubjectModel(
+      id: materiaExistente?.id,
+      name: nombreController.text.trim(),
+      color: materiaExistente?.color ?? '#2563EB',
+      teacher: profesorController.text.trim(),
+      classroom: grupoController.text.trim(),
+      currentGrade: materiaExistente?.currentGrade ?? 0.0,
+      createdAt: materiaExistente?.createdAt ?? DateTime.now(),
+      evaluationScheme: _cortes.map((corte) {
+        return {
+          'name': corte.nombreController.text.trim(),
+          'percentage': double.parse(
+            corte.porcentajeController.text.replaceAll(',', '.'),
+          ),
+        };
+      }).toList(),
+    );
+
+
+    try {
+      bool guardado;
+
+      if (materiaExistente == null) {
+        final subjectId = await _subjectService.createSubject(
+          user.uid,
+          materia,
+        );
+
+        guardado = subjectId != null;
+      } else {
+        guardado = await _subjectService.updateSubject(
+          user.uid,
+          materia,
+        );
+      }
+
+      if (!mounted) return;
+
+      if (guardado) {
+        widget.onGuardar?.call();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              materiaExistente == null
+                  ? 'Materia creada correctamente.'
+                  : 'Materia actualizada correctamente.',
+            ),
+          ),
+        );
+
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo guardar la materia.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ocurrió un error al guardar: $e'),
+        ),
+      );
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -115,12 +239,14 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.close),
         ),
-        title: const Text('Nueva materia'),
+        title: Text(
+          widget.materia == null ? 'Nueva materia' : 'Editar materia',
+        ),
         actions: [
           TextButton(
             onPressed: puedeGuardar ? _guardar : null,
             child: Text(
-              'Guardar',
+              widget.materia == null ? 'Guardar' : 'Actualizar',
               style: TextStyle(
                 color: puedeGuardar
                     ? AppColors.primary
