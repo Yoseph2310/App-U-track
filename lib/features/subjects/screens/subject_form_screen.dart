@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../tasks/services/subject_service.dart';
+import '../../tasks/models/subject_model.dart';
 class CorteEvaluacion {
   final TextEditingController nombreController;
   final TextEditingController porcentajeController;
@@ -31,6 +34,7 @@ class SubjectFormScreen extends StatefulWidget {
 
 class _SubjectFormScreenState extends State<SubjectFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final SubjectService _subjectService = SubjectService();
 
   final nombreController = TextEditingController();
   final profesorController = TextEditingController();
@@ -87,17 +91,80 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
     });
   }
 
-  void _guardar() {
+  Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (!_totalValido) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Los porcentajes deben sumar exactamente 100%.',
+          ),
+        ),
+      );
       return;
     }
 
-    widget.onGuardar?.call();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Debes iniciar sesión para guardar una materia.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final materia = SubjectModel(
+      name: nombreController.text.trim(),
+      color: '#2563EB',
+      teacher: profesorController.text.trim(),
+      classroom: grupoController.text.trim(),
+      currentGrade: 0.0,
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      final subjectId = await _subjectService.createSubject(
+        user.uid,
+        materia,
+      );
+
+      if (!mounted) return;
+
+      if (subjectId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Materia guardada correctamente.'),
+          ),
+        );
+
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se pudo guardar la materia en Firebase.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar la materia: $e'),
+        ),
+      );
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
