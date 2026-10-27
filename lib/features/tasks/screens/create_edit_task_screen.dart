@@ -79,9 +79,15 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
   }
 
   Future<void> _loadSubjects() async {
-    final loaded = _uid.isEmpty
-        ? <SubjectModel>[]
-        : await _subjectService.getSubjects(_uid);
+    var loaded = <SubjectModel>[];
+    if (_uid.isNotEmpty) {
+      try {
+        loaded = await _subjectService.getSubjects(_uid);
+      } catch (e) {
+        // getSubjects ahora relanza el error: no dejar el spinner infinito.
+        debugPrint('No se pudieron cargar las materias: $e');
+      }
+    }
     if (!mounted) return;
     setState(() {
       subjects = loaded;

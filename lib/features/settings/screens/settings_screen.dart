@@ -1,26 +1,22 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../auth/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/services/auth_service.dart'; // ← NUEVO
 import '../../reminders/notification_service.dart';
 import '../../reminders/reminder_preferences.dart';
 import '../../tasks/models/task_model.dart';
 
 /// Pantalla 9 — Recordatorios / Configuración
-/// Según especificación en docs/u-track-especificaciones-ui.md
 class SettingsScreen extends StatefulWidget {
-  /// Opcionales: si no se pasan, se toman del usuario de Firebase Auth.
-  final String? userName;
-  final String? userEmail;
-
-  /// Opcional: si se pasa, se ejecuta al cerrar sesión en vez de ir al Login.
+  final String userName;
+  final String userEmail;
   final VoidCallback? onLogout;
 
   const SettingsScreen({
     super.key,
-    this.userName,
-    this.userEmail,
+    this.userName = 'Estudiante',
+    this.userEmail = 'correo@ejemplo.com',
     this.onLogout,
   });
 
@@ -35,21 +31,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String theme = 'Claro';
   String language = 'Español';
 
+  final _authService = AuthService(); // ← NUEVO
+
   @override
   void initState() {
     super.initState();
     _loadPrefs();
   }
-
-  String get _displayName {
-    final user = FirebaseAuth.instance.currentUser;
-    final fromEmail = user?.email?.split('@').first;
-    final name = widget.userName ?? user?.displayName ?? fromEmail;
-    return (name == null || name.trim().isEmpty) ? 'Estudiante' : name;
-  }
-
-  String get _displayEmail =>
-      widget.userEmail ?? FirebaseAuth.instance.currentUser?.email ?? '';
 
   TimeOfDay _parseHour(String text) {
     final parts = text.split(' ');
@@ -96,26 +84,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (uid != null) await NotificationService.instance.rescheduleAll(uid);
   }
 
-  Future<void> _logout() async {
-    final navigator = Navigator.of(context);
-    await NotificationService.instance.cancelAll();
-    await FirebaseAuth.instance.signOut();
-    if (widget.onLogout != null) {
-      widget.onLogout!();
-      return;
-    }
-    navigator.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
   void _showComingSoon(String feature) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$feature próximamente estará disponible')),
     );
   }
+
+  // ─── NUEVO: logout real ──────────────────────────────────────────
+  Future<void> _logout() async {
+    // Diálogo de confirmación
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.errorText),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await NotificationService.instance.cancelAll(); // sin sesión no hay avisos
+    await _authService.logout();
+
+    if (!mounted) return;
+
+    // Llama al callback si la pantalla padre lo definió
+    widget.onLogout?.call();
+
+    // Borra todo el stack de navegación y va al inicio (SplashScreen o Login)
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  }
+  // ────────────────────────────────────────────────────────────────
 
   Future<void> _pickTheme() async {
     final options = ['Claro', 'Oscuro'];
@@ -155,32 +166,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await NotificationService.instance.cancelAll();
       return;
     }
-
     final status = await Permission.notification.request();
-
     if (status.isGranted) {
       setState(() => notificationsEnabled = true);
       await _savePrefs();
       await _rescheduleAll();
       return;
     }
-
-    // El usuario negó el permiso (o lo bloqueó antes), dejamos el switch apagado
     setState(() => notificationsEnabled = false);
     await _savePrefs();
-
     if (!mounted) return;
-
     if (status.isPermanentlyDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
             'Activa las notificaciones desde los ajustes del sistema para recibir recordatorios',
           ),
-          action: SnackBarAction(
-            label: 'Abrir ajustes',
-            onPressed: openAppSettings,
-          ),
+          action: SnackBarAction(label: 'Abrir ajustes', onPressed: openAppSettings),
         ),
       );
     } else {
@@ -213,18 +215,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _parseHour(reminderHour),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: AppColors.surface,
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+            surface: AppColors.surface,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
 
     if (picked != null) {
@@ -292,15 +292,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _accountCard() {
-    final name = _displayName;
-    final initials = name.trim().isNotEmpty
-        ? name
-            .trim()
-            .split(' ')
-            .where((w) => w.isNotEmpty)
-            .map((w) => w[0])
-            .take(2)
-            .join()
+    final initials = widget.userName.isNotEmpty
+        ? widget.userName.trim().split(' ').map((w) => w[0]).take(2).join()
         : '?';
 
     return GestureDetector(
@@ -331,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    widget.userName,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -340,7 +333,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _displayEmail,
+                    widget.userEmail,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -349,11 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: AppColors.textSecondary,
-            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -387,24 +376,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _preferencesCard() {
     return _card(
       children: [
-        _valueRow(
-          label: 'Tema',
-          value: theme,
-          onTap: _pickTheme,
-        ),
+        _valueRow(label: 'Tema', value: theme, onTap: _pickTheme),
         _divider(),
-        _valueRow(
-          label: 'Idioma',
-          value: language,
-          onTap: _pickLanguage,
-        ),
+        _valueRow(label: 'Idioma', value: language, onTap: _pickLanguage),
       ],
     );
   }
 
-  Widget _divider() {
-    return const Divider(height: 1, color: AppColors.border);
-  }
+  Widget _divider() => const Divider(height: 1, color: AppColors.border);
 
   Widget _switchRow({
     required String label,
@@ -416,15 +395,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, color: AppColors.textMain),
-          ),
-          Switch(
-            value: value,
-            activeColor: AppColors.primary,
-            onChanged: onChanged,
-          ),
+          Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textMain)),
+          Switch(value: value, activeColor: AppColors.primary, onChanged: onChanged),
         ],
       ),
     );
@@ -442,25 +414,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: const TextStyle(fontSize: 14, color: AppColors.textMain),
-            ),
+            Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textMain)),
             Row(
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(value, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                 const SizedBox(width: 4),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: AppColors.textSecondary,
-                ),
+                const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
               ],
             ),
           ],
@@ -474,21 +433,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       width: double.infinity,
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: _logout,
+        onPressed: _logout, // ← antes mostraba snackbar, ahora llama _logout()
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.errorText),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         icon: const Icon(Icons.logout, size: 18, color: AppColors.errorText),
         label: const Text(
           'Cerrar sesión',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: AppColors.errorText,
-          ),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.errorText),
         ),
       ),
     );
@@ -523,15 +476,13 @@ class _OptionsSheet extends StatelessWidget {
               ),
             ),
           ),
-          ...options.map((option) {
-            return ListTile(
-              title: Text(option),
-              trailing: option == current
-                  ? const Icon(Icons.check, color: AppColors.primary)
-                  : null,
-              onTap: () => Navigator.pop(context, option),
-            );
-          }),
+          ...options.map((option) => ListTile(
+            title: Text(option),
+            trailing: option == current
+                ? const Icon(Icons.check, color: AppColors.primary)
+                : null,
+            onTap: () => Navigator.pop(context, option),
+          )),
         ],
       ),
     );

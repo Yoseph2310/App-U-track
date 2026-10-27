@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../auth/login_screen.dart';
+import '../home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,16 +24,24 @@ class _SplashScreenState extends State<SplashScreen> {
         _controller.play();
         setState(() => _videoReady = true);
 
-        // Cuando el video termine, ir al login
         _controller.addListener(() {
           if (_controller.value.position >= _controller.value.duration) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-            );
+            _navegarSiguientePantalla();
           }
         });
       });
+  }
+
+  void _navegarSiguientePantalla() {
+    final user = FirebaseAuth.instance.currentUser;
+    final destino = user != null
+        ? const HomeScreen()
+        : const LoginScreen();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => destino),
+    );
   }
 
   @override
@@ -47,7 +57,6 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Video de fondo
           if (_videoReady)
             FittedBox(
               fit: BoxFit.cover,
@@ -57,8 +66,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: VideoPlayer(_controller),
               ),
             ),
-
-          // Fade de negro a transparente cuando el video está listo
           AnimatedOpacity(
             opacity: _videoReady ? 0.0 : 1.0,
             duration: const Duration(milliseconds: 600),

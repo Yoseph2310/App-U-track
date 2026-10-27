@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../core/theme/app_colors.dart';
+import '../../tasks/services/subject_service.dart';
 import 'subject_detail_screen.dart';
 import 'subject_form_screen.dart';
+import '../../tasks/services/grade_service.dart';
 
 class Materia {
+  final String id;
   final String nombre;
   final String profesor;
   final String iniciales;
   final double nota;
+  final List<Map<String, dynamic>> esquemaEvaluacion;
 
   const Materia({
+    required this.id,
     required this.nombre,
     required this.profesor,
     required this.iniciales,
     required this.nota,
+    required this.esquemaEvaluacion,
   });
 }
 
@@ -40,26 +48,14 @@ class SubjectsScreen extends StatefulWidget {
 class _SubjectsScreenState extends State<SubjectsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Materia> _materias = const [
-    Materia(
-      nombre: 'Matemáticas',
-      profesor: 'Carlos Rodríguez',
-      iniciales: 'MAT',
-      nota: 3.8,
-    ),
-    Materia(
-      nombre: 'Programación',
-      profesor: 'Juan Pérez',
-      iniciales: 'PRO',
-      nota: 4.2,
-    ),
-    Materia(
-      nombre: 'Bases de Datos',
-      profesor: 'María Gómez',
-      iniciales: 'BD',
-      nota: 3.2,
-    ),
-  ];
+  final SubjectService _subjectService = SubjectService();
+
+  List<Materia> _materias = [];
+
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  String? get _userId => FirebaseAuth.instance.currentUser?.uid;
 
   String _busqueda = '';
 
@@ -72,6 +68,75 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         _busqueda = _searchController.text.toLowerCase();
       });
     });
+
+    _loadMaterias();
+  }
+
+
+
+  Future<void> _loadMaterias() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final userId = _userId;
+
+    if (userId == null) {
+      setState(() {
+        _errorMessage = 'Debes iniciar sesión para ver tus materias.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final subjects = await _subjectService.getSubjects(userId);
+
+      if (!mounted) return;
+
+
+      final gradeService = GradeService();
+      final materiasActualizadas = <Materia>[];
+
+      for (final subject in subjects) {
+        final notaCalculada = await gradeService.calculateWeightedGrade(
+          userId,
+          subject.id ?? '',
+        );
+
+        materiasActualizadas.add(
+          Materia(
+            id: subject.id ?? '',
+            nombre: subject.name,
+            profesor: subject.teacher ?? 'Sin profesor asignado',
+            iniciales: subject.name
+                .split(' ')
+                .where((word) => word.isNotEmpty)
+                .take(2)
+                .map((word) => word[0].toUpperCase())
+                .join(),
+            nota: notaCalculada,
+            esquemaEvaluacion: subject.evaluationScheme,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _materias = materiasActualizadas;
+        _isLoading = false;
+      });
+
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudieron cargar las materias.';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -114,19 +179,19 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const SubjectFormScreen(),
                 ),
               );
+
+              if (mounted) {
+                await _loadMaterias();
+              }
             },
-            icon: const Icon(
-              Icons.add,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            icon: const Icon(Icons.add, color: AppColors.primary, size: 24),
           ),
         ],
       ),
@@ -160,13 +225,32 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
             const SizedBox(height: 16),
 
             Expanded(
-              child: _materiasFiltradas.isEmpty
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.errorText),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadMaterias,
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _materiasFiltradas.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       itemCount: _materiasFiltradas.length,
                       itemBuilder: (context, index) {
                         final materia = _materiasFiltradas[index];
-
                         return _buildMateriaCard(materia);
                       },
                     ),
@@ -185,40 +269,143 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     );
   }
 
+  Future<void> _editarMateria(Materia materia) async {
+    final userId = _userId;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes iniciar sesión para editar materias.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final subject = await _subjectService.getSubject(
+        userId,
+        materia.id,
+      );
+
+      if (!mounted) return;
+
+      if (subject == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se encontró la materia seleccionada.'),
+          ),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SubjectFormScreen(
+            materia: subject,
+          ),
+        ),
+      );
+
+      if (mounted) {
+        await _loadMaterias();
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo abrir la materia para editarla.'),
+        ),
+      );
+    }
+  }
+
+
+  Future<void> _eliminarMateria(Materia materia) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar materia'),
+        content: Text(
+          '¿Estás seguro de que deseas eliminar "${materia.nombre}"? '
+              'También se eliminarán sus notas registradas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    final userId = _userId;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes iniciar sesión para eliminar materias.'),
+        ),
+      );
+      return;
+    }
+
+    final eliminado = await _subjectService.deleteSubject(
+      userId,
+      materia.id,
+    );
+
+    if (!mounted) return;
+
+    if (eliminado) {
+      await _loadMaterias();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Materia eliminada correctamente.'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo eliminar la materia.'),
+        ),
+      );
+    }
+  }
+
   Widget _buildMateriaCard(Materia materia) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
+
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SubjectDetailScreen(
-                nombreMateria: materia.nombre,
-                notaAcumulada: materia.nota,
-                porcentajeEvaluado: 60,
-                actividades: const [
-                  Actividad(
-                    nombre: 'Parcial 1',
-                    porcentaje: 30,
-                    nota: 3.5,
-                  ),
-                  Actividad(
-                    nombre: 'Taller',
-                    porcentaje: 20,
-                    nota: 4.0,
-                  ),
-                  Actividad(
-                    nombre: 'Quiz',
-                    porcentaje: 10,
-                    nota: 4.2,
-                  ),
-                ],
-              ),
+                builder: (context) => SubjectDetailScreen(
+                  subjectId: materia.id,
+                  nombreMateria: materia.nombre,
+                  notaAcumulada: materia.nota,
+                  esquemaEvaluacion: materia.esquemaEvaluacion,
+                ),
             ),
-          );
+          ).then((_) => _loadMaterias());
         },
+
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -270,22 +457,48 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
               ),
 
               // Nota
-              Text(
-                materia.nota.toStringAsFixed(1),
-                style: TextStyle(
-                  color: _colorNota(materia.nota),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
+
+// Botón para eliminar la materia
+          IconButton(
+            tooltip: 'Eliminar materia',
+            onPressed: () => _eliminarMateria(materia),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Colors.red,
+              size: 22,
+            ),
+          ),
+
+              IconButton(
+                tooltip: 'Editar materia',
+                onPressed: () => _editarMateria(materia),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 22,
                 ),
               ),
 
-              const SizedBox(width: 4),
 
-              const Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
+// Nota
+          Text(
+            materia.nota.toStringAsFixed(1),
+            style: TextStyle(
+              color: _colorNota(materia.nota),
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+
+
             ],
           ),
         ),
@@ -298,22 +511,26 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.menu_book,
-            size: 64,
-            color: AppColors.border,
-          ),
+          const Icon(Icons.menu_book, size: 64, color: AppColors.border),
           const SizedBox(height: 16),
           const Text(
             'Aún no tienes materias registradas',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: widget.onAgregarMateria,
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SubjectFormScreen(),
+                ),
+              );
+
+              if (mounted) {
+                await _loadMaterias();
+              }
+            },
             child: const Text('Agregar materia'),
           ),
         ],
@@ -343,12 +560,7 @@ class _SubjectsBottomNavigation extends StatelessWidget {
       height: 56,
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.border,
-            width: 1,
-          ),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Row(
         children: [
@@ -397,9 +609,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active
-        ? AppColors.primary
-        : AppColors.textSecondary;
+    final color = active ? AppColors.primary : AppColors.textSecondary;
 
     return Expanded(
       child: InkWell(
@@ -407,19 +617,9 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 22,
-              color: color,
-            ),
+            Icon(icon, size: 22, color: color),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-              ),
-            ),
+            Text(label, style: TextStyle(fontSize: 11, color: color)),
           ],
         ),
       ),

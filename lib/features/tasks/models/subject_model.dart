@@ -1,17 +1,18 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Modelo de Materia
-///
-/// Representa una materia/asignatura del estudiante.
-/// Se almacena en Firestore en la colección 'users/{userId}/subjects'
+/// Representa una materia del estudiante.
 class SubjectModel {
-  final String? id;                    // ID del documento
-  final String name;                   // Ej. "Matemáticas", "Física"
-  final String color;                  // Color en hexadecimal para la UI
-  final String? teacher;               // Nombre del profesor (opcional)
-  final String? classroom;             // Salón o aula (opcional)
-  final double currentGrade;           // Calificación actual ponderada
-  final DateTime createdAt;            // Cuándo se agregó
+  final String? id;
+  final String name;
+  final String color;
+  final String? teacher;
+  final String? classroom;
+  final double currentGrade;
+  final DateTime createdAt;
+
+  // Esquema de evaluación personalizado de la materia.
+  final List<Map<String, dynamic>> evaluationScheme;
 
   SubjectModel({
     this.id,
@@ -21,9 +22,10 @@ class SubjectModel {
     this.classroom,
     this.currentGrade = 0.0,
     required this.createdAt,
+    this.evaluationScheme = const [],
   });
 
-  /// Convierte el modelo a un Map para guardar en Firestore
+  /// Convierte el modelo a un Map para guardar en Firestore.
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -32,12 +34,26 @@ class SubjectModel {
       'classroom': classroom,
       'currentGrade': currentGrade,
       'createdAt': Timestamp.fromDate(createdAt),
+      'evaluationScheme': evaluationScheme,
     };
   }
 
-  /// Crea un SubjectModel desde un documento de Firestore
+  /// Crea un SubjectModel desde Firestore.
   factory SubjectModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    final rawScheme = data['evaluationScheme'];
+
+    final scheme = rawScheme is List
+        ? rawScheme
+        .whereType<Map>()
+        .map(
+          (item) => Map<String, dynamic>.from(item),
+    )
+        .toList()
+        : <Map<String, dynamic>>[];
+
+    final rawCreatedAt = data['createdAt'];
 
     return SubjectModel(
       id: doc.id,
@@ -46,11 +62,14 @@ class SubjectModel {
       teacher: data['teacher'],
       classroom: data['classroom'],
       currentGrade: (data['currentGrade'] ?? 0.0).toDouble(),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: rawCreatedAt is Timestamp
+          ? rawCreatedAt.toDate()
+          : DateTime.now(),
+      evaluationScheme: scheme,
     );
   }
 
-  /// Copia con modificaciones
+  /// Copia con modificaciones.
   SubjectModel copyWith({
     String? id,
     String? name,
@@ -59,6 +78,7 @@ class SubjectModel {
     String? classroom,
     double? currentGrade,
     DateTime? createdAt,
+    List<Map<String, dynamic>>? evaluationScheme,
   }) {
     return SubjectModel(
       id: id ?? this.id,
@@ -68,9 +88,11 @@ class SubjectModel {
       classroom: classroom ?? this.classroom,
       currentGrade: currentGrade ?? this.currentGrade,
       createdAt: createdAt ?? this.createdAt,
+      evaluationScheme: evaluationScheme ?? this.evaluationScheme,
     );
   }
 
   @override
-  String toString() => 'SubjectModel(id: $id, name: $name, grade: $currentGrade)';
+  String toString() =>
+      'SubjectModel(id: $id, name: $name, grade: $currentGrade)';
 }
