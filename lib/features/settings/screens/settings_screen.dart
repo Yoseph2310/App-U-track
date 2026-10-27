@@ -1,18 +1,26 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../auth/login_screen.dart';
+import '../../reminders/notification_service.dart';
+import '../../reminders/reminder_preferences.dart';
+import '../../tasks/models/task_model.dart';
 
 /// Pantalla 9 — Recordatorios / Configuración
 /// Según especificación en docs/u-track-especificaciones-ui.md
 class SettingsScreen extends StatefulWidget {
-  final String userName;
-  final String userEmail;
+  /// Opcionales: si no se pasan, se toman del usuario de Firebase Auth.
+  final String? userName;
+  final String? userEmail;
+
+  /// Opcional: si se pasa, se ejecuta al cerrar sesión en vez de ir al Login.
   final VoidCallback? onLogout;
 
   const SettingsScreen({
     super.key,
-    this.userName = 'Estudiante',
-    this.userEmail = 'correo@ejemplo.com',
+    this.userName,
+    this.userEmail,
     this.onLogout,
   });
 
@@ -30,16 +38,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _checkNotificationStatus();
+    _loadPrefs();
   }
 
-  Future<void> _checkNotificationStatus() async {
-    // Al entrar a la pantalla revisamos el permiso real del sistema.
-    // La primera vez que se abre la app, el permiso todavía no se ha
-    // pedido, así que esto siempre da "denegado" y el switch queda apagado.
+  String get _displayName {
+    final user = FirebaseAuth.instance.currentUser;
+    final fromEmail = user?.email?.split('@').first;
+    final name = widget.userName ?? user?.displayName ?? fromEmail;
+    return (name == null || name.trim().isEmpty) ? 'Estudiante' : name;
+  }
+
+  String get _displayEmail =>
+      widget.userEmail ?? FirebaseAuth.instance.currentUser?.email ?? '';
+
+  TimeOfDay _parseHour(String text) {
+    final parts = text.split(' ');
+    final timeParts = parts[0].split(':');
+    var hour = int.parse(timeParts[0]);
+    final minute = int.parse(timeParts[1]);
+    if (parts.length > 1 && parts[1] == 'PM' && hour != 12) hour += 12;
+    if (parts.length > 1 && parts[1] == 'AM' && hour == 12) hour = 0;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  String _formatHour(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
+  /// Carga lo guardado en el dispositivo y revisa el permiso real del sistema.
+  /// El switch solo aparece encendido si el usuario lo activó Y el sistema
+  /// dio el permiso (la primera vez, el permiso aún no se ha pedido).
+  Future<void> _loadPrefs() async {
+    final prefs = await ReminderPreferences.load();
     final status = await Permission.notification.status;
     if (!mounted) return;
-    setState(() => notificationsEnabled = status.isGranted);
+    setState(() {
+      reminderAnticipation = prefs.anticipation.label;
+      reminderHour = _formatHour(prefs.hour);
+      notificationsEnabled = prefs.enabled && status.isGranted;
+    });
+  }
+
+  Future<void> _savePrefs() async {
+    await ReminderPreferences(
+      enabled: notificationsEnabled,
+      anticipation: ReminderTimingLabel.fromLabel(reminderAnticipation),
+      hour: _parseHour(reminderHour),
+    ).save();
+  }
+
+  /// Vuelve a programar los avisos de todas las actividades pendientes.
+  Future<void> _rescheduleAll() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) await NotificationService.instance.rescheduleAll(uid);
+  }
+
+  Future<void> _logout() async {
+    final navigator = Navigator.of(context);
+    await NotificationService.instance.cancelAll();
+    await FirebaseAuth.instance.signOut();
+    if (widget.onLogout != null) {
+      widget.onLogout!();
+      return;
+    }
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   void _showComingSoon(String feature) {
@@ -81,8 +149,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleNotifications(bool value) async {
     if (!value) {
-      // Apagar el interruptor no necesita permiso, solo dejamos de programar avisos
+      // Apagar el interruptor no necesita permiso: guardamos y borramos los avisos
       setState(() => notificationsEnabled = false);
+      await _savePrefs();
+      await NotificationService.instance.cancelAll();
       return;
     }
 
@@ -90,11 +160,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (status.isGranted) {
       setState(() => notificationsEnabled = true);
+      await _savePrefs();
+      await _rescheduleAll();
       return;
     }
 
     // El usuario negó el permiso (o lo bloqueó antes), dejamos el switch apagado
     setState(() => notificationsEnabled = false);
+    await _savePrefs();
 
     if (!mounted) return;
 
@@ -131,20 +204,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (selected != null) {
       setState(() => reminderAnticipation = selected);
+      // Es la anticipación por defecto de las actividades nuevas.
+      await _savePrefs();
     }
   }
 
   Future<void> _pickReminderHour() async {
-    final parts = reminderHour.split(' ');
-    final timeParts = parts[0].split(':');
-    var hour = int.parse(timeParts[0]);
-    final minute = int.parse(timeParts[1]);
-    if (parts.length > 1 && parts[1] == 'PM' && hour != 12) hour += 12;
-    if (parts.length > 1 && parts[1] == 'AM' && hour == 12) hour = 0;
-
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: hour, minute: minute),
+      initialTime: _parseHour(reminderHour),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -160,10 +228,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (picked != null) {
-      final displayHour = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
-      final displayMinute = picked.minute.toString().padLeft(2, '0');
-      final period = picked.period == DayPeriod.am ? 'AM' : 'PM';
-      setState(() => reminderHour = '$displayHour:$displayMinute $period');
+      setState(() => reminderHour = _formatHour(picked));
+      await _savePrefs();
+      await _rescheduleAll(); // los avisos existentes pasan a la nueva hora
     }
   }
 
@@ -225,8 +292,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _accountCard() {
-    final initials = widget.userName.isNotEmpty
-        ? widget.userName.trim().split(' ').map((w) => w[0]).take(2).join()
+    final name = _displayName;
+    final initials = name.trim().isNotEmpty
+        ? name
+            .trim()
+            .split(' ')
+            .where((w) => w.isNotEmpty)
+            .map((w) => w[0])
+            .take(2)
+            .join()
         : '?';
 
     return GestureDetector(
@@ -257,7 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.userName,
+                    name,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -266,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.userEmail,
+                    _displayEmail,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -400,14 +474,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       width: double.infinity,
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: () {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cerrando sesión (estará disponible próximamente)'),
-            ),
-          );
-        },
+        onPressed: _logout,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppColors.errorText),
           shape: RoundedRectangleBorder(

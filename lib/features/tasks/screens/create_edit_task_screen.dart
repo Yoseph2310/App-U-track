@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../reminders/notification_service.dart';
+import '../../reminders/reminder_preferences.dart';
 import '../models/task_model.dart';
 import '../models/subject_model.dart';
 import '../services/task_service.dart';
@@ -10,13 +13,14 @@ import '../services/subject_service.dart';
 class CreateEditTaskScreen extends StatefulWidget {
   final bool isEditing;
   final TaskModel? task;
-  final String userId;
+  /// Opcional: si hay sesión iniciada se usa el uid de Firebase Auth.
+  final String? userId;
 
   const CreateEditTaskScreen({
     super.key,
     this.isEditing = false,
     this.task,
-    required this.userId,
+    this.userId,
   });
 
   @override
@@ -55,11 +59,30 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
     dueTime = widget.task?.dueTime;
     reminderEnabled = widget.task?.reminderEnabled ?? false;
     reminderTiming = widget.task?.reminderTiming ?? ReminderTiming.unDia;
+    if (widget.task == null) _loadReminderDefaults();
     _loadSubjects();
   }
 
+  /// uid del usuario con sesión iniciada (o el recibido por parámetro).
+  String get _uid =>
+      FirebaseAuth.instance.currentUser?.uid ?? widget.userId ?? '';
+
+  /// En una actividad nueva, el recordatorio arranca con lo que el usuario
+  /// eligió en Configuración.
+  Future<void> _loadReminderDefaults() async {
+    final prefs = await ReminderPreferences.load();
+    if (!mounted) return;
+    setState(() {
+      reminderEnabled = prefs.enabled;
+      reminderTiming = prefs.anticipation;
+    });
+  }
+
   Future<void> _loadSubjects() async {
-    final loaded = await _subjectService.getSubjects(widget.userId);
+    final loaded = _uid.isEmpty
+        ? <SubjectModel>[]
+        : await _subjectService.getSubjects(_uid);
+    if (!mounted) return;
     setState(() {
       subjects = loaded;
       isLoadingSubjects = false;
@@ -92,7 +115,11 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: dueDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      // Al editar una actividad cuya fecha ya pasó, el calendario debe poder
+      // mostrarla (initialDate no puede ser anterior a firstDate).
+      firstDate: (dueDate != null && dueDate!.isBefore(DateTime.now()))
+          ? dueDate!
+          : DateTime.now(),
       lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
@@ -144,6 +171,14 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
   Future<void> _save() async {
     if (!isFormValid) return;
 
+    final messenger = ScaffoldMessenger.of(context);
+    if (_uid.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Inicia sesión para guardar actividades')),
+      );
+      return;
+    }
+
     setState(() => isSaving = true);
 
     try {
@@ -159,9 +194,16 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
           reminderEnabled: reminderEnabled,
           reminderTiming: reminderEnabled ? reminderTiming : null,
         );
-        final ok = await _taskService.updateTask(widget.userId, updated);
-        if (ok && mounted) {
-          Navigator.pop(context, updated);
+        final ok = await _taskService.updateTask(_uid, updated);
+        if (ok) {
+          final result =
+              await NotificationService.instance.scheduleTaskReminder(updated);
+          _showReminderResult(messenger, result);
+          if (mounted) Navigator.pop(context, updated);
+        } else {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('No se pudo guardar la actividad')),
+          );
         }
       } else {
         final newTask = TaskModel(
@@ -176,13 +218,42 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
           reminderTiming: reminderEnabled ? reminderTiming : null,
           createdAt: DateTime.now(),
         );
-        final id = await _taskService.createTask(widget.userId, newTask);
-        if (id != null && mounted) {
-          Navigator.pop(context, newTask.copyWith(id: id));
+        final id = await _taskService.createTask(_uid, newTask);
+        if (id != null) {
+          final saved = newTask.copyWith(id: id);
+          final result =
+              await NotificationService.instance.scheduleTaskReminder(saved);
+          _showReminderResult(messenger, result);
+          if (mounted) Navigator.pop(context, saved);
+        } else {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('No se pudo guardar la actividad')),
+          );
         }
       }
     } finally {
       if (mounted) setState(() => isSaving = false);
+    }
+  }
+
+  /// Avisa si la actividad se guardó pero el recordatorio no quedó programado.
+  void _showReminderResult(
+    ScaffoldMessengerState messenger,
+    ReminderResult result,
+  ) {
+    final message = switch (result) {
+      ReminderResult.disabledInSettings =>
+        'Guardada, pero las notificaciones están desactivadas en Configuración',
+      ReminderResult.permissionDenied =>
+        'Guardada, pero falta el permiso de notificaciones del sistema',
+      ReminderResult.timePassed =>
+        'Guardada, pero la hora de ese recordatorio ya pasó',
+      ReminderResult.error =>
+        'Guardada, pero no se pudo programar el recordatorio',
+      _ => null,
+    };
+    if (message != null) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

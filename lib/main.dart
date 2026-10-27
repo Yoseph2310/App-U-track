@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
+import 'features/reminders/notification_service.dart';
 import 'features/dev_menu_screen.dart'; // TEMPORAL, borrar esta línea después
 import 'features/home/home_screen.dart';
 
@@ -11,6 +12,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await NotificationService.instance.init(); // recordatorios (notificaciones locales)
   runApp(const UTrackApp());
 }
 
