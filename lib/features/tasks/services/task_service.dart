@@ -124,6 +124,7 @@ class TaskService {
           .doc(taskId)
           .update({
         'isCompleted': true,
+        'completed': true, // compatibilidad con el Home
         'completedAt': Timestamp.now(),
       });
 

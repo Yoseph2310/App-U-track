@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/services/auth_service.dart'; // ← NUEVO
+import '../../reminders/notification_service.dart';
+import '../../reminders/reminder_preferences.dart';
+import '../../tasks/models/task_model.dart';
+import '../../auth/login_screen.dart';
 
 /// Pantalla 9 — Recordatorios / Configuración
 class SettingsScreen extends StatefulWidget {
-  final String userName;
-  final String userEmail;
+  /// Opcionales: si no se pasan, se toman del usuario con sesión iniciada.
+  final String? userName;
+  final String? userEmail;
   final VoidCallback? onLogout;
 
   const SettingsScreen({
     super.key,
-    this.userName = 'Estudiante',
-    this.userEmail = 'correo@ejemplo.com',
+    this.userName,
+    this.userEmail,
     this.onLogout,
   });
 
@@ -20,7 +26,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   bool notificationsEnabled = false;
   String reminderAnticipation = '1 día antes';
   String reminderHour = '8:00 AM';
@@ -29,16 +36,129 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final _authService = AuthService(); // ← NUEVO
 
+  /// true mientras el usuario está en los ajustes del sistema dando el permiso.
+  bool _awaitingSystemSettings = false;
+
   @override
   void initState() {
     super.initState();
-    _checkNotificationStatus();
+    WidgetsBinding.instance.addObserver(this);
+    _loadPrefs();
   }
 
-  Future<void> _checkNotificationStatus() async {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Al volver a la app (por ejemplo desde los ajustes del sistema) se
+  /// vuelve a revisar el permiso real.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _syncPermission();
+  }
+
+  Future<void> _syncPermission() async {
     final status = await Permission.notification.status;
     if (!mounted) return;
-    setState(() => notificationsEnabled = status.isGranted);
+
+    if (notificationsEnabled && !status.isGranted) {
+      // El usuario quitó el permiso en los ajustes del sistema.
+      setState(() => notificationsEnabled = false);
+      await _savePrefs();
+      await NotificationService.instance.cancelAll();
+    } else if (_awaitingSystemSettings && !notificationsEnabled && status.isGranted) {
+      // Volvió de los ajustes del sistema después de darlo.
+      setState(() => notificationsEnabled = true);
+      await _savePrefs();
+      await _rescheduleAll();
+    }
+    _awaitingSystemSettings = false;
+  }
+
+  /// El sistema ya no deja pedir el permiso desde la app: explicamos y
+  /// llevamos al usuario a los ajustes de U-Track.
+  Future<void> _askOpenSystemSettings() async {
+    final open = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Permiso de notificaciones'),
+        content: const Text(
+          'Las notificaciones de U-Track están bloqueadas en los ajustes del '
+          'sistema. Actívalas allí para recibir tus recordatorios; al volver '
+          'a la app se activarán solas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ahora no'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Abrir ajustes'),
+          ),
+        ],
+      ),
+    );
+    if (open == true) {
+      _awaitingSystemSettings = true;
+      await openAppSettings();
+    }
+  }
+
+  String get _displayName {
+    final user = FirebaseAuth.instance.currentUser;
+    final name = widget.userName ?? user?.displayName ?? user?.email?.split('@').first;
+    return (name == null || name.trim().isEmpty) ? 'Estudiante' : name;
+  }
+
+  String get _displayEmail =>
+      widget.userEmail ?? FirebaseAuth.instance.currentUser?.email ?? '';
+
+  TimeOfDay _parseHour(String text) {
+    final parts = text.split(' ');
+    final timeParts = parts[0].split(':');
+    var hour = int.parse(timeParts[0]);
+    final minute = int.parse(timeParts[1]);
+    if (parts.length > 1 && parts[1] == 'PM' && hour != 12) hour += 12;
+    if (parts.length > 1 && parts[1] == 'AM' && hour == 12) hour = 0;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  String _formatHour(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
+  /// Carga lo guardado en el dispositivo y revisa el permiso real del sistema.
+  /// El switch solo aparece encendido si el usuario lo activó Y el sistema
+  /// dio el permiso (la primera vez, el permiso aún no se ha pedido).
+  Future<void> _loadPrefs() async {
+    final prefs = await ReminderPreferences.load();
+    final status = await Permission.notification.status;
+    if (!mounted) return;
+    setState(() {
+      reminderAnticipation = prefs.anticipation.label;
+      reminderHour = _formatHour(prefs.hour);
+      notificationsEnabled = prefs.enabled && status.isGranted;
+    });
+  }
+
+  Future<void> _savePrefs() async {
+    await ReminderPreferences(
+      enabled: notificationsEnabled,
+      anticipation: ReminderTimingLabel.fromLabel(reminderAnticipation),
+      hour: _parseHour(reminderHour),
+    ).save();
+  }
+
+  /// Vuelve a programar los avisos de todas las actividades pendientes.
+  Future<void> _rescheduleAll() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) await NotificationService.instance.rescheduleAll(uid);
   }
 
   void _showComingSoon(String feature) {
@@ -72,6 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed != true) return;
 
+    await NotificationService.instance.cancelAll(); // sin sesión no hay avisos
     await _authService.logout();
 
     if (!mounted) return;
@@ -79,8 +200,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Llama al callback si la pantalla padre lo definió
     widget.onLogout?.call();
 
-    // Borra todo el stack de navegación y va al inicio (SplashScreen o Login)
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    // Borra todo el historial de navegación y va directo al Login
+    // (pasar por el Splash repetía el video de bienvenida).
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
   // ────────────────────────────────────────────────────────────────
 
@@ -116,25 +241,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleNotifications(bool value) async {
     if (!value) {
+      // Apagar el interruptor no necesita permiso: guardamos y borramos los avisos
       setState(() => notificationsEnabled = false);
+      await _savePrefs();
+      await NotificationService.instance.cancelAll();
       return;
     }
     final status = await Permission.notification.request();
     if (status.isGranted) {
       setState(() => notificationsEnabled = true);
+      await _savePrefs();
+      await _rescheduleAll();
       return;
     }
     setState(() => notificationsEnabled = false);
+    await _savePrefs();
     if (!mounted) return;
-    if (status.isPermanentlyDenied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Activa las notificaciones desde los ajustes del sistema para recibir recordatorios',
-          ),
-          action: SnackBarAction(label: 'Abrir ajustes', onPressed: openAppSettings),
-        ),
-      );
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      await _askOpenSystemSettings();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -154,20 +278,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         current: reminderAnticipation,
       ),
     );
-    if (selected != null) setState(() => reminderAnticipation = selected);
+    if (selected != null) {
+      setState(() => reminderAnticipation = selected);
+      // Es la anticipación por defecto de las actividades nuevas.
+      await _savePrefs();
+    }
   }
 
   Future<void> _pickReminderHour() async {
-    final parts = reminderHour.split(' ');
-    final timeParts = parts[0].split(':');
-    var hour = int.parse(timeParts[0]);
-    final minute = int.parse(timeParts[1]);
-    if (parts.length > 1 && parts[1] == 'PM' && hour != 12) hour += 12;
-    if (parts.length > 1 && parts[1] == 'AM' && hour == 12) hour = 0;
-
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: hour, minute: minute),
+      initialTime: _parseHour(reminderHour),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
@@ -181,10 +302,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (picked != null) {
-      final displayHour = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
-      final displayMinute = picked.minute.toString().padLeft(2, '0');
-      final period = picked.period == DayPeriod.am ? 'AM' : 'PM';
-      setState(() => reminderHour = '$displayHour:$displayMinute $period');
+      setState(() => reminderHour = _formatHour(picked));
+      await _savePrefs();
+      await _rescheduleAll(); // los avisos existentes pasan a la nueva hora
     }
   }
 
@@ -246,8 +366,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _accountCard() {
-    final initials = widget.userName.isNotEmpty
-        ? widget.userName.trim().split(' ').map((w) => w[0]).take(2).join()
+    final name = _displayName;
+    final initials = name.trim().isNotEmpty
+        ? name.trim().split(' ').where((w) => w.isNotEmpty).map((w) => w[0]).take(2).join()
         : '?';
 
     return GestureDetector(
@@ -278,7 +399,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.userName,
+                    name,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -287,7 +408,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.userEmail,
+                    _displayEmail,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,

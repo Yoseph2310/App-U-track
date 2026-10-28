@@ -103,6 +103,8 @@ class TaskModel {
       'reminderEnabled': reminderEnabled,
       'reminderTiming': reminderTiming?.label,
       'isCompleted': isCompleted,
+      // El Home (core/services/task_service.dart) filtra por este nombre.
+      'completed': isCompleted,
       'createdAt': Timestamp.fromDate(createdAt),
       'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
     };
@@ -135,7 +137,8 @@ class TaskModel {
       reminderTiming: data['reminderTiming'] != null
           ? ReminderTimingLabel.fromLabel(data['reminderTiming'])
           : null,
-      isCompleted: data['isCompleted'] ?? false,
+      isCompleted:
+          (data['isCompleted'] ?? false) == true || (data['completed'] ?? false) == true,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as Timestamp).toDate()
