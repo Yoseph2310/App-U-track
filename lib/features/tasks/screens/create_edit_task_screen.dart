@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../reminders/notification_service.dart';
 import '../../reminders/reminder_preferences.dart';
@@ -239,6 +240,26 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
       }
     } finally {
       if (mounted) setState(() => isSaving = false);
+    }
+  }
+
+  /// Al activar el recordatorio, avisa de inmediato si las notificaciones no
+  /// están listas (apagadas en Configuración o sin permiso del sistema).
+  Future<void> _onReminderToggled(bool value) async {
+    setState(() => reminderEnabled = value);
+    if (!value) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final prefs = await ReminderPreferences.load();
+    final granted = await Permission.notification.isGranted;
+    if (!prefs.enabled || !granted) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Las notificaciones están desactivadas. Actívalas en Configuración para recibir este recordatorio.',
+          ),
+        ),
+      );
     }
   }
 
@@ -559,7 +580,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
             Switch(
               value: reminderEnabled,
               activeColor: AppColors.primary,
-              onChanged: (value) => setState(() => reminderEnabled = value),
+              onChanged: _onReminderToggled,
             ),
           ],
         ),

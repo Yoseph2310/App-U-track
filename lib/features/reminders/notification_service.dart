@@ -68,7 +68,9 @@ class NotificationService {
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      // Ícono blanco y simple (res/drawable-*/ic_stat_u_track.png): la barra de
+      // estado solo pinta la silueta, un ícono a todo color se vería como un cuadro.
+      android: AndroidInitializationSettings('@drawable/ic_stat_u_track'),
       iOS: DarwinInitializationSettings(),
     );
     await _plugin.initialize(settings: settings);

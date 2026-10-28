@@ -56,8 +56,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (error != null) {
       setState(() => _errorMessage = error);
+      return;
     }
-    // Si error == null, Firebase cambia el authState y navega solo
+
+    // Cuenta creada: Firebase ya dejó la sesión iniciada, así que entramos
+    // directo al Home (quitando Registro y Login del historial).
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
   }
 
   @override

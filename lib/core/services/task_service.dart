@@ -12,18 +12,34 @@ class TaskService {
       .collection('tasks');
 
   // Stream: próximas entregas ordenadas por fecha
+  //
+  // Solo se filtra por 'completed' en Firestore (un único campo, no pide
+  // índice). Lo demás se hace aquí: combinar un filtro de fecha con orderBy
+  // exige un índice compuesto, y si no existe el stream falla en silencio y
+  // el Home mostraba "No tienes entregas próximas" aunque sí hubiera.
   Stream<List<Map<String, dynamic>>> getUpcomingTasks() {
-    final now = DateTime.now();
     return _ref
         .where('completed', isEqualTo: false)
-        .where('dueDate', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
-        .orderBy('dueDate')
-        .limit(5)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {
-      'id': doc.id,
-      ...doc.data() as Map<String, dynamic>,
-    }).toList());
+        .map((snapshot) {
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+
+      final tasks = snapshot.docs
+          .map((doc) => <String, dynamic>{
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              })
+          .where((task) {
+        final due = task['dueDate'];
+        // Las que vencen hoy también cuentan como próximas.
+        return due is Timestamp && !due.toDate().isBefore(startOfToday);
+      }).toList();
+
+      tasks.sort((a, b) =>
+          (a['dueDate'] as Timestamp).compareTo(b['dueDate'] as Timestamp));
+      return tasks.take(5).toList();
+    });
   }
 
   // Contar tareas pendientes (para el Home)
