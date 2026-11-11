@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/decimal_input.dart';
 import '../../tasks/services/subject_service.dart';
 import '../../tasks/models/subject_model.dart';
 class CorteEvaluacion {
@@ -435,6 +436,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: DecimalInput.formatters,
               decoration: const InputDecoration(
                 hintText: '0',
                 suffixText: '%',
@@ -590,6 +592,7 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: DecimalInput.formatters,
               onChanged: (_) {
                 setState(() {});
               },

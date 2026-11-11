@@ -7,7 +7,8 @@ class GradeModel {
   final String? id;
   final String subjectId;
   final String name;
-  final double score;
+  /// Nota obtenida. Es null si la actividad todavía no tiene nota (pendiente).
+  final double? score;
   final double weight;
   final DateTime dateAdded;
   final String? notes;
@@ -19,7 +20,7 @@ class GradeModel {
     this.id,
     required this.subjectId,
     required this.name,
-    required this.score,
+    this.score,
     required this.weight,
     required this.dateAdded,
     this.notes,
@@ -47,7 +48,7 @@ class GradeModel {
       id: doc.id,
       subjectId: data['subjectId'] ?? '',
       name: data['name'] ?? '',
-      score: (data['score'] as num? ?? 0).toDouble(),
+      score: (data['score'] as num?)?.toDouble(),
       weight: (data['weight'] as num? ?? 0).toDouble(),
       dateAdded: data['dateAdded'] is Timestamp
           ? (data['dateAdded'] as Timestamp).toDate()
@@ -79,6 +80,9 @@ class GradeModel {
       cutName: cutName ?? this.cutName,
     );
   }
+
+  /// true si la actividad ya tiene nota registrada.
+  bool get hasScore => score != null;
 
   @override
   String toString() =>

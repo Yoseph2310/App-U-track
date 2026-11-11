@@ -25,21 +25,78 @@ class Materia {
   });
 }
 
-class SubjectsScreen extends StatefulWidget {
-  const SubjectsScreen({
-    super.key,
-    this.onAgregarMateria,
-    this.onMateriaTap,
-    this.onInicio,
-    this.onCalculadora,
-    this.onConfiguracion,
-  });
+/// Copia en memoria de las materias del usuario, para que la pantalla
+/// Materias se muestre al instante en vez de esperar la consulta cada vez.
+class SubjectsCache {
+  SubjectsCache._();
 
-  final VoidCallback? onAgregarMateria;
-  final ValueChanged<Materia>? onMateriaTap;
-  final VoidCallback? onInicio;
-  final VoidCallback? onCalculadora;
-  final VoidCallback? onConfiguracion;
+  static String? _userId;
+  static List<Materia>? _materias;
+  static Future<List<Materia>>? _pending;
+
+  /// Materias guardadas del usuario, o null si aún no se han cargado.
+  static List<Materia>? get(String userId) =>
+      _userId == userId ? _materias : null;
+
+  /// Precarga las materias (se llama al entrar a Inicio).
+  static void preload(String userId) {
+    refresh(userId).catchError((_) => <Materia>[]);
+  }
+
+  /// Consulta las materias en Firestore y actualiza la copia guardada.
+  /// Si ya hay una consulta en curso, reutiliza esa.
+  static Future<List<Materia>> refresh(String userId) {
+    final pending = _pending;
+    if (pending != null && _userId == userId) return pending;
+
+    if (_userId != userId) _materias = null;
+    _userId = userId;
+
+    final future = _fetch(userId);
+    _pending = future;
+    return future.then((materias) {
+      if (_userId == userId) _materias = materias;
+      return materias;
+    }).whenComplete(() {
+      if (identical(_pending, future)) _pending = null;
+    });
+  }
+
+  static Future<List<Materia>> _fetch(String userId) async {
+    final subjects = await SubjectService().getSubjects(userId);
+    final gradeService = GradeService();
+
+    // Las notas de todas las materias se calculan al mismo tiempo
+    // (antes se hacía una por una y por eso tardaba).
+    final notas = await Future.wait(
+      subjects.map(
+        (subject) =>
+            gradeService.calculateWeightedGrade(userId, subject.id ?? ''),
+      ),
+    );
+
+    return [
+      for (var i = 0; i < subjects.length; i++)
+        Materia(
+          id: subjects[i].id ?? '',
+          nombre: subjects[i].name,
+          profesor: subjects[i].teacher ?? 'Sin profesor asignado',
+          iniciales: subjects[i]
+              .name
+              .split(' ')
+              .where((word) => word.isNotEmpty)
+              .take(2)
+              .map((word) => word[0].toUpperCase())
+              .join(),
+          nota: notas[i],
+          esquemaEvaluacion: subjects[i].evaluationScheme,
+        ),
+    ];
+  }
+}
+
+class SubjectsScreen extends StatefulWidget {
+  const SubjectsScreen({super.key});
 
   @override
   State<SubjectsScreen> createState() => _SubjectsScreenState();
@@ -74,12 +131,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
 
 
+  /// Carga las materias. Si ya hay una copia guardada, la muestra al
+  /// instante y actualiza en segundo plano, sin el indicador de carga.
   Future<void> _loadMaterias() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
     final userId = _userId;
 
     if (userId == null) {
@@ -90,48 +144,28 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       return;
     }
 
-    try {
-      final subjects = await _subjectService.getSubjects(userId);
-
-      if (!mounted) return;
-
-
-      final gradeService = GradeService();
-      final materiasActualizadas = <Materia>[];
-
-      for (final subject in subjects) {
-        final notaCalculada = await gradeService.calculateWeightedGrade(
-          userId,
-          subject.id ?? '',
-        );
-
-        materiasActualizadas.add(
-          Materia(
-            id: subject.id ?? '',
-            nombre: subject.name,
-            profesor: subject.teacher ?? 'Sin profesor asignado',
-            iniciales: subject.name
-                .split(' ')
-                .where((word) => word.isNotEmpty)
-                .take(2)
-                .map((word) => word[0].toUpperCase())
-                .join(),
-            nota: notaCalculada,
-            esquemaEvaluacion: subject.evaluationScheme,
-          ),
-        );
+    final cached = SubjectsCache.get(userId);
+    setState(() {
+      _errorMessage = null;
+      if (cached != null) {
+        _materias = cached;
+        _isLoading = false;
+      } else {
+        _isLoading = true;
       }
+    });
 
+    try {
+      final materias = await SubjectsCache.refresh(userId);
       if (!mounted) return;
-
       setState(() {
-        _materias = materiasActualizadas;
+        _materias = materias;
         _isLoading = false;
       });
-
     } catch (e) {
       if (!mounted) return;
-
+      // Si ya se estaba mostrando la copia guardada, se deja así.
+      if (cached != null) return;
       setState(() {
         _errorMessage = 'No se pudieron cargar las materias.';
         _isLoading = false;
@@ -259,13 +293,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         ),
       ),
 
-      bottomNavigationBar: _SubjectsBottomNavigation(
-        activeIndex: 1,
-        onInicio: widget.onInicio,
-        onMaterias: () {},
-        onCalculadora: widget.onCalculadora,
-        onConfiguracion: widget.onConfiguracion,
-      ),
     );
   }
 
@@ -534,94 +561,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
             child: const Text('Agregar materia'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SubjectsBottomNavigation extends StatelessWidget {
-  const _SubjectsBottomNavigation({
-    required this.activeIndex,
-    this.onInicio,
-    this.onMaterias,
-    this.onCalculadora,
-    this.onConfiguracion,
-  });
-
-  final int activeIndex;
-  final VoidCallback? onInicio;
-  final VoidCallback? onMaterias;
-  final VoidCallback? onCalculadora;
-  final VoidCallback? onConfiguracion;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-      ),
-      child: Row(
-        children: [
-          _NavItem(
-            icon: Icons.home,
-            label: 'Inicio',
-            active: activeIndex == 0,
-            onTap: onInicio,
-          ),
-          _NavItem(
-            icon: Icons.menu_book,
-            label: 'Materias',
-            active: activeIndex == 1,
-            onTap: onMaterias,
-          ),
-          _NavItem(
-            icon: Icons.calculate,
-            label: 'Calculadora',
-            active: activeIndex == 2,
-            onTap: onCalculadora,
-          ),
-          _NavItem(
-            icon: Icons.settings,
-            label: 'Configuración',
-            active: activeIndex == 3,
-            onTap: onConfiguracion,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : AppColors.textSecondary;
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 22, color: color),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 11, color: color)),
-          ],
-        ),
       ),
     );
   }

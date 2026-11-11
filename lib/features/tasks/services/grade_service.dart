@@ -159,8 +159,9 @@ class GradeService {
       if (rawScheme is! List || rawScheme.isEmpty) {
         double totalScore = 0.0;
 
+        // Las actividades sin nota (pendientes) no suman.
         for (final grade in grades) {
-          totalScore += grade.score * grade.weight;
+          totalScore += (grade.score ?? 0) * grade.weight;
         }
 
         return totalScore / 100;
@@ -181,13 +182,15 @@ class GradeService {
               (grade.cutName == null && grade.name == cutName),
         );
 
-        final activityList = activities.toList();
+        // Solo cuentan las actividades que ya tienen nota.
+        final activityList =
+            activities.where((grade) => grade.hasScore).toList();
 
         if (activityList.isEmpty) continue;
 
         final average = activityList.fold<double>(
           0.0,
-              (sum, grade) => sum + grade.score,
+              (total, grade) => total + grade.score!,
         ) /
             activityList.length;
 
