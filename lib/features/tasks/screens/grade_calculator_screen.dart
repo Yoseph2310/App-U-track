@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/decimal_input.dart';
 
 /// Fila de actividad dentro de la calculadora.
 /// Si [scoreController] está vacío, esta es la actividad pendiente
@@ -64,7 +65,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
   void _recalculateTotalWeight() {
     double sum = 0;
     for (final row in rows) {
-      sum += double.tryParse(row.weightController.text) ?? 0;
+      sum += DecimalInput.parse(row.weightController.text) ?? 0;
     }
     totalWeightNotifier.value = sum;
   }
@@ -87,13 +88,35 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
   }
 
   void _calculate() {
-    final target = double.tryParse(targetGradeController.text);
+    final target = DecimalInput.parse(targetGradeController.text);
     if (target == null) {
       _showMessage('Ingresa la nota que quieres alcanzar');
       return;
     }
+    if (target < 0 || target > 5) {
+      _showMessage('La nota que quieres alcanzar debe estar entre 0 y 5');
+      return;
+    }
 
-    if (totalWeightNotifier.value != 100) {
+    // Cada fila: porcentaje entre 0 y 100, y nota (si la tiene) entre 0 y 5.
+    for (final row in rows) {
+      final weightText = row.weightController.text.trim();
+      final weight = DecimalInput.parse(weightText);
+      if (weightText.isEmpty || weight == null || weight <= 0 || weight > 100) {
+        _showMessage('Cada porcentaje debe ser un número mayor a 0 y hasta 100');
+        return;
+      }
+      final scoreText = row.scoreController.text.trim();
+      if (scoreText.isNotEmpty) {
+        final score = DecimalInput.parse(scoreText);
+        if (score == null || score < 0 || score > 5) {
+          _showMessage('Cada nota debe ser un número entre 0 y 5');
+          return;
+        }
+      }
+    }
+
+    if ((totalWeightNotifier.value - 100).abs() > 0.01) {
       _showMessage('Los porcentajes deben sumar exactamente 100');
       return;
     }
@@ -111,7 +134,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
     }
 
     final pendingRow = pendingRows.first;
-    final pendingWeight = double.tryParse(pendingRow.weightController.text) ?? 0;
+    final pendingWeight = DecimalInput.parse(pendingRow.weightController.text) ?? 0;
 
     if (pendingWeight == 0) {
       _showMessage('La actividad pendiente necesita un porcentaje mayor a 0');
@@ -121,8 +144,8 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
     double accumulated = 0;
     for (final row in rows) {
       if (row == pendingRow) continue;
-      final score = double.tryParse(row.scoreController.text) ?? 0;
-      final weight = double.tryParse(row.weightController.text) ?? 0;
+      final score = DecimalInput.parse(row.scoreController.text) ?? 0;
+      final weight = DecimalInput.parse(row.weightController.text) ?? 0;
       accumulated += score * weight;
     }
 
@@ -231,6 +254,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: DecimalInput.gradeFormatters,
                   style: const TextStyle(
                     fontSize: 24,
                     color: AppColors.textMain,
@@ -298,7 +322,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
     return ValueListenableBuilder<double>(
       valueListenable: totalWeightNotifier,
       builder: (context, totalWeight, _) {
-        final isTotalValid = totalWeight == 100;
+        final isTotalValid = (totalWeight - 100).abs() <= 0.01;
         return Align(
           alignment: Alignment.centerRight,
           child: Row(
@@ -351,7 +375,12 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
           const SizedBox(width: 6),
           Expanded(
             flex: 2,
-            child: _smallInput(row.scoreController, 'Nota', isNumber: true),
+            child: _smallInput(
+              row.scoreController,
+              'Nota',
+              isNumber: true,
+              isGrade: true,
+            ),
           ),
           IconButton(
             onPressed: rows.length > 1 ? () => _removeRow(index) : null,
@@ -370,6 +399,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
     TextEditingController controller,
     String hint, {
     bool isNumber = false,
+    bool isGrade = false,
     ValueChanged<String>? onChanged,
   }) {
     return TextField(
@@ -377,6 +407,11 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
+      inputFormatters: isGrade
+          ? DecimalInput.gradeFormatters
+          : isNumber
+              ? DecimalInput.formatters
+              : null,
       onChanged: onChanged,
       style: const TextStyle(fontSize: 14, color: AppColors.textMain),
       decoration: InputDecoration(

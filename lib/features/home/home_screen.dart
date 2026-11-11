@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/services/subject_service.dart';
 import '../../core/services/task_service.dart';
 import '../subjects/screens/subjects_screen.dart';
+import '../subjects/screens/subject_form_screen.dart';
 import '../tasks/screens/grade_calculator_screen.dart';
 import '../tasks/screens/create_edit_task_screen.dart';
 import '../settings/screens/settings_screen.dart';
@@ -21,6 +22,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final _subjectService = SubjectService();
   final _taskService = TaskService();
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Precarga las materias para que la pestaña Materias abra al instante.
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) SubjectsCache.preload(uid);
+  }
 
   // Nombre e inicial del usuario
   String get _userName {
@@ -44,13 +53,59 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${dias[now.weekday - 1]}, ${now.day} de ${meses[now.month - 1]}';
   }
 
+  void _goTo(int index) => setState(() => _currentIndex = index);
+
+  /// Pantalla que corresponde a cada pestaña del menú inferior.
+  /// Todas comparten el mismo menú, así funciona igual en cualquier pantalla.
+  Widget _buildTab(BuildContext context) {
+    switch (_currentIndex) {
+      case 1:
+        return const SubjectsScreen();
+      case 2:
+        return const GradeCalculatorScreen();
+      case 3:
+        return const SettingsScreen();
+      default:
+        return _buildHomeTab(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      // En otra pestaña, el botón "atrás" de Android vuelve a Inicio
+      // en vez de cerrar la app.
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goTo(0);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: _buildTab(context),
+
+        // NAVEGACIÓN INFERIOR (única para todas las pestañas)
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: AppColors.surface,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textSecondary,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _currentIndex,
+          onTap: _goTo,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Inicio'),
+            BottomNavigationBarItem(icon: Icon(Icons.book_outlined), label: 'Materias'),
+            BottomNavigationBarItem(icon: Icon(Icons.calculate_outlined), label: 'Calculadora'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Configuración'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeTab(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser!.uid;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+    return SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
@@ -129,21 +184,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.add_circle_outline,
                     label: 'Nueva\nmateria',
                     onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const SubjectsScreen())),
+                        MaterialPageRoute(builder: (_) => const SubjectFormScreen())),
                   ),
                   const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.grade_outlined,
                     label: 'Registrar\nnota',
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const SubjectsScreen())),
+                    onTap: () => _goTo(1),
                   ),
                   const SizedBox(width: 12),
                   _QuickAction(
                     icon: Icons.calculate_outlined,
                     label: 'Calculadora',
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const GradeCalculatorScreen())),
+                    onTap: () => _goTo(2),
                   ),
                   const SizedBox(width: 12),
                   _QuickAction(
@@ -207,46 +260,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-
-      // NAVEGACIÓN INFERIOR
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => SubjectsScreen(
-                  onInicio: () => Navigator.pop(context),
-                  onCalculadora: () => Navigator.pushReplacement(context,
-                      MaterialPageRoute(builder: (_) => const GradeCalculatorScreen())),
-                  onConfiguracion: () => Navigator.pushReplacement(context,
-                      MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                )));
-            return;
-          }
-          if (index == 2) {
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const GradeCalculatorScreen()));
-            return;
-          }
-          if (index == 3) {
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const SettingsScreen()));
-            return;
-          }
-          setState(() => _currentIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.book_outlined), label: 'Materias'),
-          BottomNavigationBarItem(icon: Icon(Icons.calculate_outlined), label: 'Calculadora'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Configuración'),
-        ],
-      ),
     );
   }
 }
