@@ -214,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     if (confirmed != true || !mounted) return;
 
-    // Ventana "Cerrando sesión…" mientras se cierra todo.
+    // Ventana "Cerrando sesión…" mientras se cierra la sesión.
     showDialog<void>(
       context: context,
       barrierDismissible: false,
