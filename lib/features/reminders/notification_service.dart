@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../core/settings/app_settings.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/services/task_service.dart';
 import 'reminder_preferences.dart';
@@ -204,8 +205,12 @@ class NotificationService {
 
   String _body(TaskModel task) {
     final date = '${task.dueDate.day}/${task.dueDate.month}/${task.dueDate.year}';
-    final time = task.dueTime != null ? ' a las ${_formatTime12h(task.dueTime!)}' : '';
-    return '${task.activityType.label} de ${task.subjectName} · vence el $date$time';
+    final hour = task.dueTime != null ? _formatTime12h(task.dueTime!) : null;
+    final time = hour == null ? '' : tr(' a las $hour', ' at $hour');
+    return tr(
+      '${task.activityType.displayLabel} de ${task.subjectName} · vence el $date$time',
+      '${task.activityType.displayLabel} for ${task.subjectName} · due $date$time',
+    );
   }
 
   String _formatTime12h(TimeOfDay time) {

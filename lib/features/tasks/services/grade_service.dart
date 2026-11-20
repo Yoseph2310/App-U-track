@@ -139,6 +139,53 @@ class GradeService {
   /// Fórmula nota_final = suma(calificación × peso) / suma(pesos)
 
 
+  /// Calcula la nota acumulada (sobre 5) a partir de las notas y el esquema
+  /// de evaluación de la materia. No usa Firestore, así se puede probar.
+  ///
+  /// - Sin esquema: suma(nota × porcentaje) / 100.
+  /// - Con esquema (cortes): por cada corte, promedio de sus actividades con
+  ///   nota × porcentaje del corte / 100.
+  /// Las actividades sin nota (pendientes) no cuentan.
+  static double weightedGrade(List<GradeModel> grades, Object? rawScheme) {
+    if (grades.isEmpty) return 0.0;
+
+    if (rawScheme is! List || rawScheme.isEmpty) {
+      double totalScore = 0.0;
+      for (final grade in grades) {
+        totalScore += (grade.score ?? 0) * grade.weight;
+      }
+      return totalScore / 100;
+    }
+
+    double totalScore = 0.0;
+
+    for (final item in rawScheme) {
+      if (item is! Map) continue;
+
+      final cutName = item['name']?.toString() ?? '';
+      final percentage = (item['percentage'] as num?)?.toDouble() ?? 0.0;
+
+      final activityList = grades
+          .where((grade) =>
+              grade.cutName == cutName ||
+              (grade.cutName == null && grade.name == cutName))
+          .where((grade) => grade.hasScore)
+          .toList();
+
+      if (activityList.isEmpty) continue;
+
+      final average = activityList.fold<double>(
+            0.0,
+            (total, grade) => total + grade.score!,
+          ) /
+          activityList.length;
+
+      totalScore += average * percentage / 100;
+    }
+
+    return totalScore;
+  }
+
   Future<double> calculateWeightedGrade(String userId,
       String subjectId,) async {
     try {
@@ -154,50 +201,7 @@ class GradeService {
           .get();
 
       final subjectData = subjectDoc.data();
-      final rawScheme = subjectData?['evaluationScheme'];
-
-      if (rawScheme is! List || rawScheme.isEmpty) {
-        double totalScore = 0.0;
-
-        // Las actividades sin nota (pendientes) no suman.
-        for (final grade in grades) {
-          totalScore += (grade.score ?? 0) * grade.weight;
-        }
-
-        return totalScore / 100;
-      }
-
-      double totalScore = 0.0;
-
-      for (final item in rawScheme) {
-        if (item is! Map) continue;
-
-        final cutName = item['name']?.toString() ?? '';
-        final percentage =
-            (item['percentage'] as num?)?.toDouble() ?? 0.0;
-
-        final activities = grades.where(
-              (grade) =>
-          grade.cutName == cutName ||
-              (grade.cutName == null && grade.name == cutName),
-        );
-
-        // Solo cuentan las actividades que ya tienen nota.
-        final activityList =
-            activities.where((grade) => grade.hasScore).toList();
-
-        if (activityList.isEmpty) continue;
-
-        final average = activityList.fold<double>(
-          0.0,
-              (total, grade) => total + grade.score!,
-        ) /
-            activityList.length;
-
-        totalScore += average * percentage / 100;
-      }
-
-      return totalScore;
+      return weightedGrade(grades, subjectData?['evaluationScheme']);
     } catch (e) {
       print('Error calculando nota acumulada: $e');
       return 0.0;

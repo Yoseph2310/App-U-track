@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/decimal_input.dart';
 import '../../tasks/models/grade_model.dart';
@@ -163,17 +164,24 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.surface,
-        icon: const Icon(Icons.help_outline, color: AppColors.primary),
-        title: const Text('Observaciones de las actividades'),
-        content: const Text(
-          'Las observaciones de cada nota están ocultas. Para verlas, toca '
-          'la actividad y se abrirán en una ventana.',
+        icon: Icon(Icons.help_outline, color: AppColors.primary),
+        title: Text(tr(
+          'Observaciones de las actividades',
+          'Activity notes',
+        )),
+        content: Text(
+          tr(
+            'Las observaciones de cada nota están ocultas. Para verlas, toca '
+            'la actividad y se abrirán en una ventana.',
+            'The notes for each grade are hidden. To see them, tap '
+            'the activity and they will open in a window.',
+          ),
         ),
         actions: [
           if (allowHide)
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('No volver a mostrar'),
+              child: Text(tr('No volver a mostrar', "Don't show again")),
             ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -206,14 +214,19 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _detailRow(
-              'Nota',
-              grade.hasScore ? _formatScore(grade.score!) : 'Pendiente',
+              tr('Nota', 'Grade'),
+              grade.hasScore
+                  ? _formatScore(grade.score!)
+                  : tr('Pendiente', 'Pending'),
             ),
             if (esquema == null)
-              _detailRow('Porcentaje', '${_formatNumber(grade.weight)}%'),
+              _detailRow(
+                tr('Porcentaje', 'Percentage'),
+                '${_formatNumber(grade.weight)}%',
+              ),
             const SizedBox(height: 12),
-            const Text(
-              'Observaciones',
+            Text(
+              tr('Observaciones', 'Notes'),
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -221,7 +234,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              grade.notes ?? 'Sin observaciones.',
+              grade.notes ?? tr('Sin observaciones.', 'No notes.'),
               style: TextStyle(
                 fontSize: 15,
                 color: grade.notes == null
@@ -234,11 +247,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Editar'),
+            child: Text(tr('Editar', 'Edit')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cerrar'),
+            child: Text(tr('Cerrar', 'Close')),
           ),
         ],
       ),
@@ -256,14 +269,14 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         children: [
           Text(
             '$label: ',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppColors.textMain,
@@ -304,7 +317,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
     if (userId == null) {
       setState(() {
-        _errorMessage = 'Debes iniciar sesión para ver las calificaciones.';
+        _errorMessage = tr(
+          'Debes iniciar sesión para ver las calificaciones.',
+          'You must sign in to see the grades.',
+        );
         _isLoading = false;
       });
       return;
@@ -331,7 +347,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'No se pudieron cargar las calificaciones.';
+        _errorMessage = tr(
+          'No se pudieron cargar las calificaciones.',
+          'Could not load the grades.',
+        );
         _isLoading = false;
       });
     }
@@ -358,7 +377,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     final userId = _userId;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesión.')),
+        SnackBar(
+          content: Text(tr('Debes iniciar sesión.', 'You must sign in.')),
+        ),
       );
       return;
     }
@@ -397,13 +418,20 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Calificación guardada.')),
+          SnackBar(
+            content: Text(tr('Calificación guardada.', 'Grade saved.')),
+          ),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo guardar la calificación.')),
+          SnackBar(
+            content: Text(tr(
+              'No se pudo guardar la calificación.',
+              'Could not save the grade.',
+            )),
+          ),
         );
       }
     } finally {
@@ -417,16 +445,19 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Eliminar calificación'),
-        content: Text('¿Deseas eliminar "${grade.name}"?'),
+        title: Text(tr('Eliminar calificación', 'Delete grade')),
+        content: Text(tr(
+          '¿Deseas eliminar "${grade.name}"?',
+          'Do you want to delete "${grade.name}"?',
+        )),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
+            child: Text(tr('Cancelar', 'Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Eliminar'),
+            child: Text(tr('Eliminar', 'Delete')),
           ),
         ],
       ),
@@ -449,7 +480,12 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       await _loadGrades();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo eliminar la calificación.')),
+        SnackBar(
+          content: Text(tr(
+            'No se pudo eliminar la calificación.',
+            'Could not delete the grade.',
+          )),
+        ),
       );
     }
   }
@@ -478,7 +514,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: _loadGrades,
-                child: const Text('Reintentar'),
+                child: Text(tr('Reintentar', 'Retry')),
               ),
             ],
           ),
@@ -491,8 +527,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Actividades evaluadas',
+                Text(
+                  tr('Actividades evaluadas', 'Graded activities'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -500,10 +536,13 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   ),
                 ),
                 IconButton(
-                  tooltip: '¿Cómo ver las observaciones?',
+                  tooltip: tr(
+                    '¿Cómo ver las observaciones?',
+                    'How do I see the notes?',
+                  ),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _showNotesTip(),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.help_outline,
                     size: 20,
                     color: AppColors.textSecondary,
@@ -512,8 +551,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 const Spacer(),
                 TextButton(
                   onPressed: _isSaving ? null : _showGradeForm,
-                  child: const Text(
-                    '+ Agregar',
+                  child: Text(
+                    tr('+ Agregar', '+ Add'),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.secondary,
@@ -552,7 +591,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       child: Column(
         children: [
           Text(
-            'Nota acumulada',
+            tr('Nota acumulada', 'Accumulated grade'),
             style: TextStyle(color: _stateColor, fontSize: 13),
           ),
           const SizedBox(height: 4),
@@ -570,13 +609,16 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             child: LinearProgressIndicator(
               value: (_porcentajeEvaluado / 100).clamp(0.0, 1.0),
               minHeight: 8,
-              backgroundColor: Colors.white.withValues(alpha: 0.65),
+              backgroundColor: AppColors.surface.withValues(alpha: 0.65),
               valueColor: AlwaysStoppedAnimation<Color>(_stateColor),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '${_porcentajeEvaluado.toStringAsFixed(0)}% evaluado',
+            tr(
+              '${_porcentajeEvaluado.toStringAsFixed(0)}% evaluado',
+              '${_porcentajeEvaluado.toStringAsFixed(0)}% graded',
+            ),
             style: TextStyle(color: _stateColor, fontSize: 12),
           ),
         ],
@@ -613,7 +655,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 decoration: BoxDecoration(
                   border: index <
                       widget.esquemaEvaluacion.length - 1
-                      ? const Border(
+                      ? Border(
                     bottom: BorderSide(
                       color: AppColors.border,
                     ),
@@ -628,7 +670,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         Expanded(
                           child: Text(
                             nombre,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textMain,
@@ -637,7 +679,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         ),
                         Text(
                           '${porcentaje.toStringAsFixed(0)}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
@@ -647,10 +689,13 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     const SizedBox(height: 8),
 
                     if (actividades.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(vertical: 6),
                         child: Text(
-                          'Todavía no hay actividades en este corte.',
+                          tr(
+                            'Todavía no hay actividades en este corte.',
+                            'There are no activities in this term yet.',
+                          ),
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
@@ -664,7 +709,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         title: Text(grade.name),
                         subtitle: grade.hasScore
                             ? null
-                            : const Text('Pendiente'),
+                            : Text(tr('Pendiente', 'Pending')),
                         onTap: () =>
                             _showGradeDetail(grade, esquema: corte),
                         trailing: Row(
@@ -682,14 +727,18 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                                   _deleteGrade(grade);
                                 }
                               },
-                              itemBuilder: (context) => const [
+                              itemBuilder: (context) => [
                                 PopupMenuItem(
                                   value: 'edit',
-                                  child: Text('Editar actividad'),
+                                  child: Text(
+                                    tr('Editar actividad', 'Edit activity'),
+                                  ),
                                 ),
                                 PopupMenuItem(
                                   value: 'delete',
-                                  child: Text('Eliminar actividad'),
+                                  child: Text(
+                                    tr('Eliminar actividad', 'Delete activity'),
+                                  ),
                                 ),
                               ],
                             ),
@@ -705,7 +754,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                             ? null
                             : () => _showGradeForm(esquema: corte),
                         icon: const Icon(Icons.add),
-                        label: const Text('Agregar actividad'),
+                        label: Text(tr('Agregar actividad', 'Add activity')),
                       ),
                     ),
                   ],
@@ -718,8 +767,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     }
 
     if (_grades.isEmpty) {
-      return const Text(
-        'Todavía no has registrado calificaciones para esta materia.',
+      return Text(
+        tr(
+          'Todavía no has registrado calificaciones para esta materia.',
+          "You haven't recorded any grades for this subject yet.",
+        ),
         textAlign: TextAlign.center,
       );
     }
@@ -737,7 +789,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             subtitle: Text(
               grade.hasScore
                   ? '${_formatNumber(grade.weight)}%'
-                  : '${_formatNumber(grade.weight)}% · Pendiente',
+                  : tr(
+                      '${_formatNumber(grade.weight)}% · Pendiente',
+                      '${_formatNumber(grade.weight)}% · Pending',
+                    ),
             ),
             onTap: () => _showGradeDetail(grade),
             trailing: _scoreLabel(grade),
@@ -754,18 +809,35 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     String message;
 
     if (_gradedGrades.isEmpty) {
-      message = 'Registra tus calificaciones para calcular la nota necesaria.';
+      message = tr(
+        'Registra tus calificaciones para calcular la nota necesaria.',
+        'Record your grades to calculate the grade you need.',
+      );
     } else if (remaining <= 0) {
       message = _notaAcumulada >= 3.0
-          ? 'Ya alcanzaste la nota mínima de 3.0.'
-          : 'Ya está evaluado el 100% y no alcanzaste el 3.0.';
+          ? tr(
+              'Ya alcanzaste la nota mínima de 3.0.',
+              'You already reached the minimum grade of 3.0.',
+            )
+          : tr(
+              'Ya está evaluado el 100% y no alcanzaste el 3.0.',
+              '100% has been graded and you did not reach 3.0.',
+            );
     } else if (needed != null && needed > 5.0) {
-      message = 'No es posible llegar a 3.0 con el porcentaje restante.';
+      message = tr(
+        'No es posible llegar a 3.0 con el porcentaje restante.',
+        'It is not possible to reach 3.0 with the remaining percentage.',
+      );
     } else if (needed != null && needed <= 0) {
-      message = 'Ya tienes suficiente para alcanzar el 3.0.';
+      message = tr(
+        'Ya tienes suficiente para alcanzar el 3.0.',
+        'You already have enough to reach 3.0.',
+      );
     } else {
-      message =
-      'Necesitas ${needed!.toStringAsFixed(2)} en el ${remaining.toStringAsFixed(0)}% restante.';
+      message = tr(
+        'Necesitas ${needed!.toStringAsFixed(2)} en el ${remaining.toStringAsFixed(0)}% restante.',
+        'You need ${needed.toStringAsFixed(2)} in the remaining ${remaining.toStringAsFixed(0)}%.',
+      );
     }
 
     return Container(
@@ -778,7 +850,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.calculate,
             size: 20,
             color: AppColors.secondaryDark,
@@ -788,8 +860,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Cálculo para alcanzar 3.0',
+                Text(
+                  tr('Cálculo para alcanzar 3.0', 'Calculation to reach 3.0'),
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.secondaryDark,
@@ -798,7 +870,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 const SizedBox(height: 8),
                 Text(
                   message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: AppColors.secondaryDark,
@@ -895,7 +967,11 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.surface,
-      title: Text(widget.existing == null ? 'Nueva nota' : 'Editar nota'),
+      title: Text(
+        widget.existing == null
+            ? tr('Nueva nota', 'New grade')
+            : tr('Editar nota', 'Edit grade'),
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -904,12 +980,15 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Actividad',
-                  hintText: 'Ej. Parcial 1',
+                decoration: InputDecoration(
+                  labelText: tr('Actividad', 'Activity'),
+                  hintText: tr('Ej. Parcial 1', 'E.g. Midterm 1'),
                 ),
                 validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Escribe el nombre de la actividad'
+                    ? tr(
+                        'Escribe el nombre de la actividad',
+                        'Enter the activity name',
+                      )
                     : null,
               ),
               const SizedBox(height: 12),
@@ -918,10 +997,13 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: DecimalInput.gradeFormatters,
-                decoration: const InputDecoration(
-                  labelText: 'Nota (opcional)',
-                  hintText: 'Ej. 4.25',
-                  helperText: 'Déjala vacía si aún no tienes la nota',
+                decoration: InputDecoration(
+                  labelText: tr('Nota (opcional)', 'Grade (optional)'),
+                  hintText: tr('Ej. 4.25', 'E.g. 4.25'),
+                  helperText: tr(
+                    'Déjala vacía si aún no tienes la nota',
+                    "Leave it empty if you don't have the grade yet",
+                  ),
                   suffixText: '/ 5.0',
                 ),
                 validator: (value) {
@@ -929,7 +1011,10 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
                   if (text.isEmpty) return null; // la nota es opcional
                   final score = DecimalInput.parse(text);
                   if (score == null || score < 0 || score > 5) {
-                    return 'Ingresa una nota entre 0 y 5';
+                    return tr(
+                      'Ingresa una nota entre 0 y 5',
+                      'Enter a grade between 0 and 5',
+                    );
                   }
                   return null;
                 },
@@ -940,20 +1025,29 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: DecimalInput.formatters,
-                  decoration: const InputDecoration(
-                    labelText: 'Porcentaje de la materia',
+                  decoration: InputDecoration(
+                    labelText: tr(
+                      'Porcentaje de la materia',
+                      'Percentage of the subject',
+                    ),
                     suffixText: '%',
                   ),
                   validator: (value) {
                     final weight = DecimalInput.parse(value ?? '');
                     if (weight == null || weight <= 0 || weight > 100) {
-                      return 'Ingresa un porcentaje mayor que 0 y hasta 100';
+                      return tr(
+                        'Ingresa un porcentaje mayor que 0 y hasta 100',
+                        'Enter a percentage greater than 0 and up to 100',
+                      );
                     }
                     final otherWeight = widget.otherGrades
                         .where((grade) => grade.id != widget.existing?.id)
                         .fold<double>(0, (total, g) => total + g.weight);
                     if (otherWeight + weight > 100.01) {
-                      return 'El total de los porcentajes supera el 100%';
+                      return tr(
+                        'El total de los porcentajes supera el 100%',
+                        'The total of the percentages exceeds 100%',
+                      );
                     }
                     return null;
                   },
@@ -961,8 +1055,8 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Observaciones (opcional)',
+                decoration: InputDecoration(
+                  labelText: tr('Observaciones (opcional)', 'Notes (optional)'),
                 ),
                 maxLines: 2,
               ),
@@ -973,11 +1067,11 @@ class _GradeFormDialogState extends State<_GradeFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(tr('Cancelar', 'Cancel')),
         ),
         FilledButton(
           onPressed: _submit,
-          child: const Text('Guardar'),
+          child: Text(tr('Guardar', 'Save')),
         ),
       ],
     );

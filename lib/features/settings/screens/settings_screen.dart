@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/user_name.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/services/auth_service.dart'; // ← NUEVO
 import '../../reminders/notification_service.dart';
@@ -29,10 +33,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen>
     with WidgetsBindingObserver {
   bool notificationsEnabled = false;
-  String reminderAnticipation = '1 día antes';
+  ReminderTiming reminderAnticipation = ReminderTiming.unDia;
   String reminderHour = '8:00 AM';
-  String theme = 'Claro';
-  String language = 'Español';
 
   final _authService = AuthService(); // ← NUEVO
 
@@ -83,20 +85,23 @@ class _SettingsScreenState extends State<SettingsScreen>
     final open = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Permiso de notificaciones'),
-        content: const Text(
+        title: Text(tr('Permiso de notificaciones', 'Notification permission')),
+        content: Text(tr(
           'Las notificaciones de U-Track están bloqueadas en los ajustes del '
-          'sistema. Actívalas allí para recibir tus recordatorios; al volver '
-          'a la app se activarán solas.',
-        ),
+              'sistema. Actívalas allí para recibir tus recordatorios; al volver '
+              'a la app se activarán solas.',
+          'U-Track notifications are blocked in the system settings. Turn them '
+              'on there to get your reminders; they will turn on by themselves '
+              'when you come back to the app.',
+        )),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ahora no'),
+            child: Text(tr('Ahora no', 'Not now')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Abrir ajustes'),
+            child: Text(tr('Abrir ajustes', 'Open settings')),
           ),
         ],
       ),
@@ -108,9 +113,9 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   String get _displayName {
-    final user = FirebaseAuth.instance.currentUser;
-    final name = widget.userName ?? user?.displayName ?? user?.email?.split('@').first;
-    return (name == null || name.trim().isEmpty) ? 'Estudiante' : name;
+    final name = widget.userName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return UserName.full(FirebaseAuth.instance.currentUser);
   }
 
   String get _displayEmail =>
@@ -141,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final status = await Permission.notification.status;
     if (!mounted) return;
     setState(() {
-      reminderAnticipation = prefs.anticipation.label;
+      reminderAnticipation = prefs.anticipation;
       reminderHour = _formatHour(prefs.hour);
       notificationsEnabled = prefs.enabled && status.isGranted;
     });
@@ -150,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _savePrefs() async {
     await ReminderPreferences(
       enabled: notificationsEnabled,
-      anticipation: ReminderTimingLabel.fromLabel(reminderAnticipation),
+      anticipation: reminderAnticipation,
       hour: _parseHour(reminderHour),
     ).save();
   }
@@ -161,11 +166,27 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (uid != null) await NotificationService.instance.rescheduleAll(uid);
   }
 
-  void _showComingSoon(String feature) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature próximamente estará disponible')),
+  /// Abre la ventana para editar la cuenta (nombre y contraseña).
+  Future<void> _editAccount() async {
+    final updated = await showDialog<bool>(
+      context: context,
+      builder: (_) => _EditAccountDialog(
+        initialName: _displayName,
+        email: _displayEmail,
+        authService: _authService,
+      ),
     );
+
+    if (updated == true && mounted) {
+      setState(() {}); // la tarjeta muestra el nuevo nombre
+      final name = _displayName;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('✅ ¡Listo! Tu nombre ahora es $name.',
+              '✅ Done! Your name is now $name.')),
+        ),
+      );
+    }
   }
 
   // ─── NUEVO: logout real ──────────────────────────────────────────
@@ -174,26 +195,60 @@ class _SettingsScreenState extends State<SettingsScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cerrar sesión'),
-        content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        title: Text(tr('Cerrar sesión', 'Sign out')),
+        content: Text(tr('¿Estás seguro de que quieres cerrar sesión?',
+            'Are you sure you want to sign out?')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text(tr('Cancelar', 'Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.errorText),
-            child: const Text('Cerrar sesión'),
+            child: Text(tr('Cerrar sesión', 'Sign out')),
           ),
         ],
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    await NotificationService.instance.cancelAll(); // sin sesión no hay avisos
-    await _authService.logout();
+    // Ventana "Cerrando sesión…" mientras se cierra todo.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  tr('Cerrando sesión…', 'Signing out…'),
+                  style: TextStyle(fontSize: 15, color: AppColors.textMain),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Se espera al menos un momento para que el mensaje alcance a verse.
+    await Future.wait([
+      () async {
+        await NotificationService.instance.cancelAll(); // sin sesión no hay avisos
+        await _authService.logout();
+      }(),
+      Future<void>.delayed(const Duration(milliseconds: 900)),
+    ]);
 
     if (!mounted) return;
 
@@ -203,39 +258,34 @@ class _SettingsScreenState extends State<SettingsScreen>
     // Borra todo el historial de navegación y va directo al Login
     // (pasar por el Splash repetía el video de bienvenida).
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen(justSignedOut: true)),
       (route) => false,
     );
   }
   // ────────────────────────────────────────────────────────────────
 
-  Future<void> _pickTheme() async {
-    final options = ['Claro', 'Oscuro'];
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => _OptionsSheet(
-        title: 'Tema',
-        options: options,
-        current: theme,
-      ),
-    );
-    if (selected != null && selected != theme) {
-      _showComingSoon('El tema oscuro');
-    }
+  /// Activa o desactiva el tema oscuro. Se aplica al instante en toda la app.
+  Future<void> _toggleDarkTheme(bool value) async {
+    await AppSettings.setDark(value);
+    if (mounted) setState(() {});
   }
 
   Future<void> _pickLanguage() async {
-    final options = ['Español', 'Inglés', 'Portugués', 'Francés', 'Alemán'];
     final selected = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => _OptionsSheet(
-        title: 'Idioma',
-        options: options,
-        current: language,
+        title: tr('Idioma', 'Language'),
+        options: const {'es': 'Español', 'en': 'English'},
+        current: AppSettings.isEnglish ? 'en' : 'es',
       ),
     );
-    if (selected != null && selected != language) {
-      _showComingSoon('El idioma $selected');
+    if (selected == null) return;
+    final english = selected == 'en';
+    if (english != AppSettings.isEnglish) {
+      await AppSettings.setEnglish(english);
+      if (mounted) setState(() {});
+      // Los recordatorios ya programados se vuelven a crear en el nuevo idioma.
+      if (notificationsEnabled) await _rescheduleAll();
     }
   }
 
@@ -261,25 +311,30 @@ class _SettingsScreenState extends State<SettingsScreen>
       await _askOpenSystemSettings();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Necesitas conceder el permiso de notificaciones para activar los recordatorios'),
+        SnackBar(
+          content: Text(tr(
+              'Necesitas conceder el permiso de notificaciones para activar los recordatorios',
+              'You need to grant the notification permission to turn on reminders')),
         ),
       );
     }
   }
 
   Future<void> _pickAnticipation() async {
-    final options = ['1 día antes', '3 días antes', '1 semana antes'];
     final selected = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => _OptionsSheet(
-        title: 'Avisar con anticipación de',
-        options: options,
-        current: reminderAnticipation,
+        title: tr('Avisar con anticipación de', 'Remind me in advance'),
+        options: {
+          for (final timing in ReminderTiming.values)
+            timing.name: timing.displayLabel,
+        },
+        current: reminderAnticipation.name,
       ),
     );
     if (selected != null) {
-      setState(() => reminderAnticipation = selected);
+      setState(() => reminderAnticipation =
+          ReminderTiming.values.firstWhere((t) => t.name == selected));
       // Es la anticipación por defecto de las actividades nuevas.
       await _savePrefs();
     }
@@ -290,13 +345,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       initialTime: _parseHour(reminderHour),
       builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppColors.primary,
-            onPrimary: Colors.white,
-            surface: AppColors.surface,
-          ),
-        ),
+        data: AppTheme.pickerTheme(context),
         child: child!,
       ),
     );
@@ -316,8 +365,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Configuración',
+        title: Text(
+          tr('Configuración', 'Settings'),
           style: TextStyle(
             color: AppColors.textMain,
             fontSize: 18,
@@ -330,11 +379,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           _accountCard(),
           const SizedBox(height: 16),
-          _sectionLabel('Recordatorios'),
+          _sectionLabel(tr('Recordatorios', 'Reminders')),
           const SizedBox(height: 8),
           _remindersCard(),
           const SizedBox(height: 16),
-          _sectionLabel('Preferencias'),
+          _sectionLabel(tr('Preferencias', 'Preferences')),
           const SizedBox(height: 8),
           _preferencesCard(),
           const SizedBox(height: 24),
@@ -347,7 +396,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _sectionLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
@@ -372,7 +421,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         : '?';
 
     return GestureDetector(
-      onTap: () => _showComingSoon('Editar tu cuenta'),
+      onTap: _editAccount,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -386,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               backgroundColor: AppColors.primaryLight,
               child: Text(
                 initials.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w500,
                   fontSize: 16,
@@ -400,7 +449,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textMain,
@@ -409,7 +458,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 2),
                   Text(
                     _displayEmail,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
@@ -417,7 +466,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+            Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -428,19 +477,19 @@ class _SettingsScreenState extends State<SettingsScreen>
     return _card(
       children: [
         _switchRow(
-          label: 'Notificaciones activas',
+          label: tr('Notificaciones activas', 'Notifications on'),
           value: notificationsEnabled,
           onChanged: _toggleNotifications,
         ),
         _divider(),
         _valueRow(
-          label: 'Avisar con anticipación de',
-          value: reminderAnticipation,
+          label: tr('Avisar con anticipación de', 'Remind me in advance'),
+          value: reminderAnticipation.displayLabel,
           onTap: _pickAnticipation,
         ),
         _divider(),
         _valueRow(
-          label: 'Hora de recordatorio',
+          label: tr('Hora de recordatorio', 'Reminder time'),
           value: reminderHour,
           onTap: _pickReminderHour,
         ),
@@ -451,14 +500,22 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _preferencesCard() {
     return _card(
       children: [
-        _valueRow(label: 'Tema', value: theme, onTap: _pickTheme),
+        _switchRow(
+          label: tr('Tema oscuro', 'Dark theme'),
+          value: AppSettings.isDark,
+          onChanged: _toggleDarkTheme,
+        ),
         _divider(),
-        _valueRow(label: 'Idioma', value: language, onTap: _pickLanguage),
+        _valueRow(
+          label: tr('Idioma', 'Language'),
+          value: AppSettings.isEnglish ? 'English' : 'Español',
+          onTap: _pickLanguage,
+        ),
       ],
     );
   }
 
-  Widget _divider() => const Divider(height: 1, color: AppColors.border);
+  Widget _divider() => Divider(height: 1, color: AppColors.border);
 
   Widget _switchRow({
     required String label,
@@ -470,8 +527,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textMain)),
-          Switch(value: value, activeColor: AppColors.primary, onChanged: onChanged),
+          Text(label, style: TextStyle(fontSize: 14, color: AppColors.textMain)),
+          Switch(value: value, activeThumbColor: AppColors.primary, onChanged: onChanged),
         ],
       ),
     );
@@ -489,12 +546,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textMain)),
+            Text(label, style: TextStyle(fontSize: 14, color: AppColors.textMain)),
             Row(
               children: [
-                Text(value, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                Text(value, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
               ],
             ),
           ],
@@ -510,12 +567,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: OutlinedButton.icon(
         onPressed: _logout, // ← antes mostraba snackbar, ahora llama _logout()
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.errorText),
+          side: BorderSide(color: AppColors.errorText),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        icon: const Icon(Icons.logout, size: 18, color: AppColors.errorText),
-        label: const Text(
-          'Cerrar sesión',
+        icon: Icon(Icons.logout, size: 18, color: AppColors.errorText),
+        label: Text(
+          tr('Cerrar sesión', 'Sign out'),
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.errorText),
         ),
       ),
@@ -523,9 +580,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 }
 
+/// Hoja inferior con opciones. [options] va de valor interno a texto visible;
+/// al elegir devuelve el valor interno.
 class _OptionsSheet extends StatelessWidget {
   final String title;
-  final List<String> options;
+  final Map<String, String> options;
   final String current;
 
   const _OptionsSheet({
@@ -544,22 +603,189 @@ class _OptionsSheet extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMain,
               ),
             ),
           ),
-          ...options.map((option) => ListTile(
-            title: Text(option),
-            trailing: option == current
-                ? const Icon(Icons.check, color: AppColors.primary)
+          ...options.entries.map((option) => ListTile(
+            title: Text(option.value,
+                style: TextStyle(color: AppColors.textMain)),
+            trailing: option.key == current
+                ? Icon(Icons.check, color: AppColors.primary)
                 : null,
-            onTap: () => Navigator.pop(context, option),
+            onTap: () => Navigator.pop(context, option.key),
           )),
         ],
       ),
+    );
+  }
+}
+/// Ventana para editar la cuenta: cambia el nombre y permite pedir el correo
+/// para cambiar la contraseña. Maneja su propio campo de texto y lo libera al
+/// cerrarse (así cancelar no genera errores).
+class _EditAccountDialog extends StatefulWidget {
+  const _EditAccountDialog({
+    required this.initialName,
+    required this.email,
+    required this.authService,
+  });
+
+  final String initialName;
+  final String email;
+  final AuthService authService;
+
+  @override
+  State<_EditAccountDialog> createState() => _EditAccountDialogState();
+}
+
+class _EditAccountDialogState extends State<_EditAccountDialog> {
+  late final TextEditingController _nameController =
+      TextEditingController(text: widget.initialName);
+  bool _saving = false;
+  bool _sendingReset = false;
+  String? _nameError;
+  String? _resetMessage;
+  bool _resetOk = false;
+
+  bool get _busy => _saving || _sendingReset;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _nameError = tr('Escribe tu nombre.', 'Enter your name.'));
+      return;
+    }
+
+    // Si el nombre no cambió no hace falta llamar a Firebase.
+    if (name == widget.initialName.trim()) {
+      Navigator.pop(context, false);
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _nameError = null;
+    });
+
+    final error = await widget.authService.updateDisplayName(name);
+
+    if (!mounted) return;
+
+    if (error == null) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
+        _saving = false;
+        _nameError = error;
+      });
+    }
+  }
+
+  Future<void> _sendPasswordReset() async {
+    setState(() {
+      _sendingReset = true;
+      _resetMessage = null;
+    });
+
+    final error = await widget.authService.sendPasswordReset(widget.email);
+
+    if (!mounted) return;
+
+    setState(() {
+      _sendingReset = false;
+      _resetOk = error == null;
+      _resetMessage = error ??
+          tr('Te enviamos un correo para cambiar tu contraseña.',
+              'We sent you an email to change your password.');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasEmail = widget.email.trim().isNotEmpty;
+
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      scrollable: true,
+      title: Text(tr('Editar cuenta', 'Edit account')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _nameController,
+            enabled: !_busy,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) {
+              if (!_busy) _save();
+            },
+            decoration: InputDecoration(
+              labelText: tr('Nombre', 'Name'),
+              prefixIcon: const Icon(Icons.person_outline),
+              errorText: _nameError,
+            ),
+          ),
+          if (hasEmail) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.email_outlined,
+                    size: 18, color: AppColors.textSecondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(widget.email, style: AppTextStyles.body2),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _busy ? null : _sendPasswordReset,
+              icon: _sendingReset
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.lock_outline),
+              label: Text(tr('Cambiar contraseña', 'Change password')),
+            ),
+            if (_resetMessage != null)
+              Text(
+                _resetMessage!,
+                style: AppTextStyles.caption.copyWith(
+                  color: _resetOk ? AppColors.okText : AppColors.errorText,
+                ),
+              ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context, false),
+          child: Text(tr('Cancelar', 'Cancel')),
+        ),
+        FilledButton(
+          onPressed: _busy ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : Text(tr('Guardar', 'Save')),
+        ),
+      ],
     );
   }
 }
