@@ -207,4 +207,44 @@ class TaskService {
       return [];
     }
   }
+
+  /// Stream de las actividades pendientes que vencen de hoy en adelante,
+  /// ordenadas por fecha (la más cercana primero).
+  ///
+  /// Solo se filtra por 'completed' en Firestore (un único campo, no pide
+  /// índice compuesto). La fecha se filtra aquí en la app.
+  Stream<List<TaskModel>> watchUpcomingTasks(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('tasks')
+        .where('completed', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) {
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+
+      final tasks = snapshot.docs
+          // Ignora documentos sin fecha válida para no romper la lista.
+          .where((doc) => doc.data()['dueDate'] is Timestamp)
+          .map((doc) => TaskModel.fromFirestore(doc))
+          // Las que vencen hoy también cuentan como próximas.
+          .where((task) => !task.dueDate.isBefore(startOfToday))
+          .toList();
+
+      tasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      return tasks;
+    });
+  }
+
+  /// Stream con la cantidad de actividades pendientes (para el Inicio).
+  Stream<int> watchPendingCount(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('tasks')
+        .where('completed', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
 }

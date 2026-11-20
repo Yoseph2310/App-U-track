@@ -1,10 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/settings/app_settings.dart';
+
 /// Tipo de actividad académica, según especificación de UI pantalla 7
 enum ActivityType { tarea, taller, examen }
 
 extension ActivityTypeLabel on ActivityType {
+  /// Texto para mostrar en pantalla, en el idioma elegido.
+  /// (No usar para guardar: en Firestore se guarda [label].)
+  String get displayLabel {
+    switch (this) {
+      case ActivityType.tarea:
+        return tr('Tarea', 'Assignment');
+      case ActivityType.taller:
+        return tr('Taller', 'Workshop');
+      case ActivityType.examen:
+        return tr('Examen', 'Exam');
+    }
+  }
+
+  /// Valor que se guarda en Firestore (siempre en español).
   String get label {
     switch (this) {
       case ActivityType.tarea:
@@ -32,6 +48,20 @@ extension ActivityTypeLabel on ActivityType {
 enum ReminderTiming { unDia, tresDias, unaSemana }
 
 extension ReminderTimingLabel on ReminderTiming {
+  /// Texto para mostrar en pantalla, en el idioma elegido.
+  /// (No usar para guardar: en Firestore se guarda [label].)
+  String get displayLabel {
+    switch (this) {
+      case ReminderTiming.unDia:
+        return tr('1 día antes', '1 day before');
+      case ReminderTiming.tresDias:
+        return tr('3 días antes', '3 days before');
+      case ReminderTiming.unaSemana:
+        return tr('1 semana antes', '1 week before');
+    }
+  }
+
+  /// Valor que se guarda en Firestore (siempre en español).
   String get label {
     switch (this) {
       case ReminderTiming.unDia:
@@ -103,7 +133,7 @@ class TaskModel {
       'reminderEnabled': reminderEnabled,
       'reminderTiming': reminderTiming?.label,
       'isCompleted': isCompleted,
-      // El Home (core/services/task_service.dart) filtra por este nombre.
+      // TaskService.watchUpcomingTasks filtra por este nombre.
       'completed': isCompleted,
       'createdAt': Timestamp.fromDate(createdAt),
       'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
@@ -139,7 +169,11 @@ class TaskModel {
           : null,
       isCompleted:
           (data['isCompleted'] ?? false) == true || (data['completed'] ?? false) == true,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      // createdAt puede venir vacío un instante si se guardó con hora del
+      // servidor; en ese caso se usa la hora actual para no fallar.
+      createdAt: data['createdAt'] is Timestamp
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as Timestamp).toDate()
           : null,

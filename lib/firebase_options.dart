@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDaEMWVOudXowsPGrxdWiUL0_v8vTjtxjI',
-    appId: '1:717600349473:android:cac3e680e5a98267b9b260',
+    appId: '1:717600349473:android:7d887104c4c8ba03b9b260',
     messagingSenderId: '717600349473',
     projectId: 'u-track-d8b83',
     storageBucket: 'u-track-d8b83.firebasestorage.app',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/settings/app_settings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/services/auth_service.dart';
@@ -31,11 +32,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     // Validación local antes de llamar a Firebase
     if (_nameController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Ingresa tu nombre.');
+      setState(() => _errorMessage = tr('Ingresa tu nombre.', 'Enter your name.'));
       return;
     }
     if (_passwordController.text != _confirmController.text) {
-      setState(() => _errorMessage = 'Las contraseñas no coinciden.');
+      setState(() => _errorMessage = tr('Las contraseñas no coinciden.', 'The passwords do not match.'));
       return;
     }
 
@@ -61,6 +62,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // Cuenta creada: Firebase ya dejó la sesión iniciada, así que entramos
     // directo al Home (quitando Registro y Login del historial).
+    final firstName = _nameController.text.trim().split(' ').first;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(tr('🎉 ¡Bienvenido a U-Track, $firstName!',
+            '🎉 Welcome to U-Track, $firstName!')),
+      ),
+    );
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
   }
 
@@ -83,24 +91,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              Text('Crear cuenta', style: AppTextStyles.headline1),
+              Text(tr('Crear cuenta', 'Create account'), style: AppTextStyles.headline1),
               const SizedBox(height: 8),
-              Text('Únete a U-Track', style: AppTextStyles.body2),
+              Text(tr('Únete a U-Track', 'Join U-Track'), style: AppTextStyles.body2),
               const SizedBox(height: 32),
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre completo',
-                  prefixIcon: Icon(Icons.person_outlined),
+                decoration: InputDecoration(
+                  labelText: tr('Nombre completo', 'Full name'),
+                  prefixIcon: const Icon(Icons.person_outlined),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
-                  prefixIcon: Icon(Icons.email_outlined),
+                decoration: InputDecoration(
+                  labelText: tr('Correo electrónico', 'Email'),
+                  prefixIcon: const Icon(Icons.email_outlined),
                 ),
               ),
               const SizedBox(height: 16),
@@ -108,7 +116,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
-                  labelText: 'Contraseña',
+                  labelText: tr('Contraseña', 'Password'),
                   prefixIcon: const Icon(Icons.lock_outlined),
                   suffixIcon: IconButton(
                     icon: Icon(_obscurePassword
@@ -123,9 +131,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextField(
                 controller: _confirmController,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirmar contraseña',
-                  prefixIcon: Icon(Icons.lock_outlined),
+                decoration: InputDecoration(
+                  labelText: tr('Confirmar contraseña', 'Confirm password'),
+                  prefixIcon: const Icon(Icons.lock_outlined),
                 ),
               ),
 
@@ -135,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                    style: TextStyle(color: AppColors.errorText, fontSize: 13),
                   ),
                 ),
 
@@ -151,14 +159,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white),
                   )
-                      : const Text('Registrarse'),
+                      : Text(tr('Registrarse', 'Sign up')),
                 ),
               ),
               const SizedBox(height: 16),
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('¿Ya tienes cuenta? Inicia sesión'),
+                  child: Text(tr('¿Ya tienes cuenta? Inicia sesión', 'Already have an account? Sign in')),
                 ),
               ),
             ],

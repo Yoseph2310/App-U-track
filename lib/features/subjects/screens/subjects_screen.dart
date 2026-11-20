@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../tasks/services/subject_service.dart';
 import 'subject_detail_screen.dart';
@@ -80,7 +81,8 @@ class SubjectsCache {
         Materia(
           id: subjects[i].id ?? '',
           nombre: subjects[i].name,
-          profesor: subjects[i].teacher ?? 'Sin profesor asignado',
+          profesor: subjects[i].teacher ??
+              tr('Sin profesor asignado', 'No teacher assigned'),
           iniciales: subjects[i]
               .name
               .split(' ')
@@ -138,7 +140,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
     if (userId == null) {
       setState(() {
-        _errorMessage = 'Debes iniciar sesión para ver tus materias.';
+        _errorMessage = tr(
+          'Debes iniciar sesión para ver tus materias.',
+          'You must sign in to see your subjects.',
+        );
         _isLoading = false;
       });
       return;
@@ -167,7 +172,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       // Si ya se estaba mostrando la copia guardada, se deja así.
       if (cached != null) return;
       setState(() {
-        _errorMessage = 'No se pudieron cargar las materias.';
+        _errorMessage = tr(
+          'No se pudieron cargar las materias.',
+          'Could not load the subjects.',
+        );
         _isLoading = false;
       });
     }
@@ -208,7 +216,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       backgroundColor: AppColors.background,
 
       appBar: AppBar(
-        title: const Text('Materias'),
+        title: Text(tr('Materias', 'Subjects')),
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [
@@ -225,7 +233,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                 await _loadMaterias();
               }
             },
-            icon: const Icon(Icons.add, color: AppColors.primary, size: 24),
+            icon: Icon(Icons.add, color: AppColors.primary, size: 24),
           ),
         ],
       ),
@@ -241,8 +249,8 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
               height: 44,
               child: TextField(
                 controller: _searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar materia',
+                decoration: InputDecoration(
+                  hintText: tr('Buscar materia', 'Search subject'),
                   prefixIcon: Icon(
                     Icons.search,
                     size: 22,
@@ -269,12 +277,12 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                           Text(
                             _errorMessage!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.errorText),
+                            style: TextStyle(color: AppColors.errorText),
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _loadMaterias,
-                            child: const Text('Reintentar'),
+                            child: Text(tr('Reintentar', 'Retry')),
                           ),
                         ],
                       ),
@@ -301,8 +309,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes iniciar sesión para editar materias.'),
+        SnackBar(
+          content: Text(tr(
+            'Debes iniciar sesión para editar materias.',
+            'You must sign in to edit subjects.',
+          )),
         ),
       );
       return;
@@ -318,8 +329,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
       if (subject == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se encontró la materia seleccionada.'),
+          SnackBar(
+            content: Text(tr(
+              'No se encontró la materia seleccionada.',
+              'The selected subject was not found.',
+            )),
           ),
         );
         return;
@@ -341,8 +355,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo abrir la materia para editarla.'),
+        SnackBar(
+          content: Text(tr(
+            'No se pudo abrir la materia para editarla.',
+            'Could not open the subject to edit it.',
+          )),
         ),
       );
     }
@@ -353,21 +370,25 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Eliminar materia'),
+        title: Text(tr('Eliminar materia', 'Delete subject')),
         content: Text(
-          '¿Estás seguro de que deseas eliminar "${materia.nombre}"? '
-              'También se eliminarán sus notas registradas.',
+          tr(
+            '¿Estás seguro de que deseas eliminar "${materia.nombre}"? '
+                'También se eliminarán sus notas registradas.',
+            'Are you sure you want to delete "${materia.nombre}"? '
+                'Its recorded grades will also be deleted.',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
+            child: Text(tr('Cancelar', 'Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              tr('Eliminar', 'Delete'),
+              style: TextStyle(color: AppColors.errorText),
             ),
           ),
         ],
@@ -380,8 +401,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes iniciar sesión para eliminar materias.'),
+        SnackBar(
+          content: Text(tr(
+            'Debes iniciar sesión para eliminar materias.',
+            'You must sign in to delete subjects.',
+          )),
         ),
       );
       return;
@@ -400,14 +424,20 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Materia eliminada correctamente.'),
+        SnackBar(
+          content: Text(tr(
+            'Materia eliminada correctamente.',
+            'Subject deleted successfully.',
+          )),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo eliminar la materia.'),
+        SnackBar(
+          content: Text(tr(
+            'No se pudo eliminar la materia.',
+            'Could not delete the subject.',
+          )),
         ),
       );
     }
@@ -441,14 +471,14 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
               Container(
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   materia.iniciales,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.primaryDark,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -465,7 +495,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                   children: [
                     Text(
                       materia.nombre,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textMain,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -473,8 +503,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Prof. ${materia.profesor}',
-                      style: const TextStyle(
+                      tr(
+                        'Prof. ${materia.profesor}',
+                        'Prof. ${materia.profesor}',
+                      ),
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
                       ),
@@ -487,19 +520,19 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
 // Botón para eliminar la materia
           IconButton(
-            tooltip: 'Eliminar materia',
+            tooltip: tr('Eliminar materia', 'Delete subject'),
             onPressed: () => _eliminarMateria(materia),
-            icon: const Icon(
+            icon: Icon(
               Icons.delete_outline,
-              color: Colors.red,
+              color: AppColors.errorText,
               size: 22,
             ),
           ),
 
               IconButton(
-                tooltip: 'Editar materia',
+                tooltip: tr('Editar materia', 'Edit subject'),
                 onPressed: () => _editarMateria(materia),
-                icon: const Icon(
+                icon: Icon(
                   Icons.edit_outlined,
                   color: AppColors.primary,
                   size: 22,
@@ -519,7 +552,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
           const SizedBox(width: 4),
 
-          const Icon(
+          Icon(
             Icons.chevron_right,
             size: 18,
             color: AppColors.textSecondary,
@@ -538,10 +571,13 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.menu_book, size: 64, color: AppColors.border),
+          Icon(Icons.menu_book, size: 64, color: AppColors.border),
           const SizedBox(height: 16),
-          const Text(
-            'Aún no tienes materias registradas',
+          Text(
+            tr(
+              'Aún no tienes materias registradas',
+              "You don't have any subjects registered yet",
+            ),
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 16),
@@ -558,7 +594,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                 await _loadMaterias();
               }
             },
-            child: const Text('Agregar materia'),
+            child: Text(tr('Agregar materia', 'Add subject')),
           ),
         ],
       ),

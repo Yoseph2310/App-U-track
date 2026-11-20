@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/decimal_input.dart';
 import '../../tasks/services/subject_service.dart';
@@ -129,9 +130,9 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
     if (!_totalValido) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'La suma de los porcentajes debe ser exactamente 100%.',
+            tr('La suma de los porcentajes debe ser exactamente 100%.', 'The percentages must add up to exactly 100%.'),
           ),
         ),
       );
@@ -142,8 +143,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes iniciar sesión para guardar la materia.'),
+        SnackBar(
+          content: Text(tr('Debes iniciar sesión para guardar la materia.', 'You must sign in to save the subject.')),
         ),
       );
       return;
@@ -197,8 +198,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
           SnackBar(
             content: Text(
               materiaExistente == null
-                  ? 'Materia creada correctamente.'
-                  : 'Materia actualizada correctamente.',
+                  ? tr('Materia creada correctamente.', 'Subject created successfully.')
+                  : tr('Materia actualizada correctamente.', 'Subject updated successfully.'),
             ),
           ),
         );
@@ -206,8 +207,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo guardar la materia.'),
+          SnackBar(
+            content: Text(tr('No se pudo guardar la materia.', 'Could not save the subject.')),
           ),
         );
       }
@@ -216,7 +217,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ocurrió un error al guardar: $e'),
+          content: Text(tr('Ocurrió un error al guardar: $e', 'An error occurred while saving: $e')),
         ),
       );
     }
@@ -241,13 +242,13 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
           icon: const Icon(Icons.close),
         ),
         title: Text(
-          widget.materia == null ? 'Nueva materia' : 'Editar materia',
+          widget.materia == null ? tr('Nueva materia', 'New subject') : tr('Editar materia', 'Edit subject'),
         ),
         actions: [
           TextButton(
             onPressed: puedeGuardar ? _guardar : null,
             child: Text(
-              widget.materia == null ? 'Guardar' : 'Actualizar',
+              widget.materia == null ? tr('Guardar', 'Save') : tr('Actualizar', 'Update'),
               style: TextStyle(
                 color: puedeGuardar
                     ? AppColors.primary
@@ -268,7 +269,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           children: [
-            _buildLabel('Nombre de la materia'),
+            _buildLabel(tr('Nombre de la materia', 'Subject name')),
 
             const SizedBox(height: 8),
 
@@ -277,7 +278,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
               decoration: const InputDecoration(),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Ingresa el nombre de la materia';
+                  return tr('Ingresa el nombre de la materia', 'Enter the subject name');
                 }
 
                 return null;
@@ -286,7 +287,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
             const SizedBox(height: 16),
 
-            _buildLabel('Profesor'),
+            _buildLabel(tr('Profesor', 'Teacher')),
 
             const SizedBox(height: 8),
 
@@ -295,7 +296,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
               decoration: const InputDecoration(),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Ingresa el profesor';
+                  return tr('Ingresa el profesor', 'Enter the teacher');
                 }
 
                 return null;
@@ -304,7 +305,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
             const SizedBox(height: 16),
 
-            _buildLabel('Grupo'),
+            _buildLabel(tr('Grupo', 'Group')),
 
             const SizedBox(height: 8),
 
@@ -313,7 +314,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
               decoration: const InputDecoration(),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Ingresa el grupo';
+                  return tr('Ingresa el grupo', 'Enter the group');
                 }
 
                 return null;
@@ -322,8 +323,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Esquema de evaluación',
+            Text(
+              tr('Esquema de evaluación', 'Grading scheme'),
               style: TextStyle(
                 color: AppColors.textMain,
                 fontSize: 15,
@@ -333,8 +334,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
 
             const SizedBox(height: 6),
 
-            const Text(
-              'Agrega los cortes o actividades que componen la nota final',
+            Text(
+              tr('Agrega los cortes o actividades que componen la nota final', 'Add the terms or activities that make up the final grade'),
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 12,
@@ -354,8 +355,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: _agregarCorte,
-                child: const Text(
-                  '+ Agregar corte',
+                child: Text(
+                  tr('+ Agregar corte', '+ Add term'),
                   style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 14,
@@ -372,7 +373,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!_totalValido)
-                    const Icon(
+                    Icon(
                       Icons.error_outline,
                       size: 18,
                       color: AppColors.errorText,
@@ -381,7 +382,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
                   const SizedBox(width: 4),
 
                   Text(
-                    'Total: ${_totalPorcentaje.toStringAsFixed(0)}%',
+                    tr('Total: ${_totalPorcentaje.toStringAsFixed(0)}%', 'Total: ${_totalPorcentaje.toStringAsFixed(0)}%'),
                     style: TextStyle(
                       color: _totalValido
                           ? AppColors.okText
@@ -402,7 +403,7 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
   Widget _buildLabel(String texto) {
     return Text(
       texto,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppColors.textSecondary,
         fontSize: 13,
       ),
@@ -420,8 +421,8 @@ class _SubjectFormScreenState extends State<SubjectFormScreen> {
             flex: 6,
             child: TextField(
               controller: corte.nombreController,
-              decoration: const InputDecoration(
-                hintText: 'Nombre',
+              decoration: InputDecoration(
+                hintText: tr('Nombre', 'Name'),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -480,11 +481,11 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
   TextEditingController();
 
   final List<String> _actividades = [
-    'Parcial 1',
-    'Parcial 2',
-    'Taller',
-    'Quiz',
-    'Examen final',
+    tr('Parcial 1', 'Midterm 1'),
+    tr('Parcial 2', 'Midterm 2'),
+    tr('Taller', 'Workshop'),
+    tr('Quiz', 'Quiz'),
+    tr('Examen final', 'Final exam'),
   ];
 
   bool get _esValido {
@@ -522,12 +523,12 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.close),
         ),
-        title: const Text('Nueva nota'),
+        title: Text(tr('Nueva nota', 'New grade')),
         actions: [
           TextButton(
             onPressed: _esValido ? _guardar : null,
             child: Text(
-              'Guardar',
+              tr('Guardar', 'Save'),
               style: TextStyle(
                 color: _esValido
                     ? AppColors.primary
@@ -547,8 +548,8 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
           children: [
             const SizedBox(height: 20),
 
-            const Text(
-              'Actividad',
+            Text(
+              tr('Actividad', 'Activity'),
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -559,8 +560,8 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
 
             DropdownButtonFormField<String>(
               value: _actividadSeleccionada,
-              decoration: const InputDecoration(
-                hintText: 'Selecciona una actividad',
+              decoration: InputDecoration(
+                hintText: tr('Selecciona una actividad', 'Select an activity'),
               ),
               items: _actividades.map((actividad) {
                 return DropdownMenuItem<String>(
@@ -577,8 +578,8 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Nota',
+            Text(
+              tr('Nota', 'Grade'),
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -596,16 +597,16 @@ class _NewGradeScreenState extends State<NewGradeScreen> {
               onChanged: (_) {
                 setState(() {});
               },
-              decoration: const InputDecoration(
-                hintText: 'Ej. 4.2',
+              decoration: InputDecoration(
+                hintText: tr('Ej. 4.2', 'e.g. 4.2'),
                 suffixText: '/ 5.0',
               ),
             ),
 
             const SizedBox(height: 8),
 
-            const Text(
-              'Ingresa una nota entre 0.0 y 5.0',
+            Text(
+              tr('Ingresa una nota entre 0.0 y 5.0', 'Enter a grade between 0.0 and 5.0'),
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,

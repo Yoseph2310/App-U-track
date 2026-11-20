@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/decimal_input.dart';
 
@@ -90,11 +91,21 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
   void _calculate() {
     final target = DecimalInput.parse(targetGradeController.text);
     if (target == null) {
-      _showMessage('Ingresa la nota que quieres alcanzar');
+      _showMessage(
+        tr(
+          'Ingresa la nota que quieres alcanzar',
+          'Enter the grade you want to reach',
+        ),
+      );
       return;
     }
     if (target < 0 || target > 5) {
-      _showMessage('La nota que quieres alcanzar debe estar entre 0 y 5');
+      _showMessage(
+        tr(
+          'La nota que quieres alcanzar debe estar entre 0 y 5',
+          'The grade you want to reach must be between 0 and 5',
+        ),
+      );
       return;
     }
 
@@ -103,21 +114,36 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
       final weightText = row.weightController.text.trim();
       final weight = DecimalInput.parse(weightText);
       if (weightText.isEmpty || weight == null || weight <= 0 || weight > 100) {
-        _showMessage('Cada porcentaje debe ser un número mayor a 0 y hasta 100');
+        _showMessage(
+          tr(
+            'Cada porcentaje debe ser un número mayor a 0 y hasta 100',
+            'Each percentage must be a number greater than 0 and up to 100',
+          ),
+        );
         return;
       }
       final scoreText = row.scoreController.text.trim();
       if (scoreText.isNotEmpty) {
         final score = DecimalInput.parse(scoreText);
         if (score == null || score < 0 || score > 5) {
-          _showMessage('Cada nota debe ser un número entre 0 y 5');
+          _showMessage(
+            tr(
+              'Cada nota debe ser un número entre 0 y 5',
+              'Each grade must be a number between 0 and 5',
+            ),
+          );
           return;
         }
       }
     }
 
     if ((totalWeightNotifier.value - 100).abs() > 0.01) {
-      _showMessage('Los porcentajes deben sumar exactamente 100');
+      _showMessage(
+        tr(
+          'Los porcentajes deben sumar exactamente 100',
+          'The percentages must add up to exactly 100',
+        ),
+      );
       return;
     }
 
@@ -128,7 +154,10 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
 
     if (pendingRows.length != 1) {
       _showMessage(
-        'Deja vacía la nota de la única actividad que quieres calcular',
+        tr(
+          'Deja vacía la nota de la única actividad que quieres calcular',
+          'Leave the grade empty only for the one activity you want to calculate',
+        ),
       );
       return;
     }
@@ -137,7 +166,12 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
     final pendingWeight = DecimalInput.parse(pendingRow.weightController.text) ?? 0;
 
     if (pendingWeight == 0) {
-      _showMessage('La actividad pendiente necesita un porcentaje mayor a 0');
+      _showMessage(
+        tr(
+          'La actividad pendiente necesita un porcentaje mayor a 0',
+          'The pending activity needs a percentage greater than 0',
+        ),
+      );
       return;
     }
 
@@ -172,8 +206,8 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Calculadora de notas',
+        title: Text(
+          tr('Calculadora de notas', 'Grade calculator'),
           style: TextStyle(
             color: AppColors.textMain,
             fontSize: 18,
@@ -189,7 +223,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.info_outline,
                   size: 14,
                   color: AppColors.textSecondary,
@@ -197,7 +231,10 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Calcula cualquier nota sin afectar tu cuenta',
+                    tr(
+                      'Calcula cualquier nota sin afectar tu cuenta',
+                      'Calculate any grade without affecting your account',
+                    ),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -210,8 +247,8 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Actividades',
+                Text(
+                  tr('Actividades', 'Activities'),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -220,8 +257,8 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                 ),
                 GestureDetector(
                   onTap: _addRow,
-                  child: const Text(
-                    '+ Agregar',
+                  child: Text(
+                    tr('+ Agregar', '+ Add'),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.secondary,
@@ -235,9 +272,9 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
             const SizedBox(height: 12),
             _buildTotalIndicator(),
             const SizedBox(height: 24),
-            const Center(
+            Center(
               child: Text(
-                'Nota que quiero alcanzar',
+                tr('Nota que quiero alcanzar', 'Grade I want to reach'),
                 style: TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -255,7 +292,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                     decimal: true,
                   ),
                   inputFormatters: DecimalInput.gradeFormatters,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     color: AppColors.textMain,
                     fontWeight: FontWeight.w500,
@@ -264,21 +301,21 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
+                      borderSide: BorderSide(
                         color: AppColors.primary,
                         width: 2,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
+                      borderSide: BorderSide(
                         color: AppColors.primary,
                         width: 2,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
+                      borderSide: BorderSide(
                         color: AppColors.primary,
                         width: 2,
                       ),
@@ -299,9 +336,9 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Calcular',
-                  style: TextStyle(
+                child: Text(
+                  tr('Calcular', 'Calculate'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -329,7 +366,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!isTotalValid)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(right: 4),
                   child: Icon(
                     Icons.error_outline,
@@ -338,7 +375,10 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
                   ),
                 ),
               Text(
-                'Total ${totalWeight.toStringAsFixed(0)}%',
+                tr(
+                  'Total ${totalWeight.toStringAsFixed(0)}%',
+                  'Total ${totalWeight.toStringAsFixed(0)}%',
+                ),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -360,7 +400,10 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
         children: [
           Expanded(
             flex: 3,
-            child: _smallInput(row.nameController, 'Actividad'),
+            child: _smallInput(
+              row.nameController,
+              tr('Actividad', 'Activity'),
+            ),
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -377,14 +420,14 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
             flex: 2,
             child: _smallInput(
               row.scoreController,
-              'Nota',
+              tr('Nota', 'Grade'),
               isNumber: true,
               isGrade: true,
             ),
           ),
           IconButton(
             onPressed: rows.length > 1 ? () => _removeRow(index) : null,
-            icon: const Icon(
+            icon: Icon(
               Icons.delete_outline,
               size: 20,
               color: AppColors.textSecondary,
@@ -413,10 +456,10 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
               ? DecimalInput.formatters
               : null,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 14, color: AppColors.textMain),
+      style: TextStyle(fontSize: 14, color: AppColors.textMain),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        hintStyle: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
@@ -425,15 +468,15 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
     );
@@ -450,7 +493,7 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
       child: Column(
         children: [
           Text(
-            'Necesitas obtener',
+            tr('Necesitas obtener', 'You need to get'),
             style: TextStyle(
               fontSize: 13,
               color: isReachable ? AppColors.okText : AppColors.errorText,
@@ -467,8 +510,11 @@ class _GradeCalculatorScreenState extends State<GradeCalculatorScreen> {
           ),
           if (!isReachable) ...[
             const SizedBox(height: 8),
-            const Text(
-              'No es posible alcanzar esta nota con el porcentaje restante',
+            Text(
+              tr(
+                'No es posible alcanzar esta nota con el porcentaje restante',
+                'It is not possible to reach this grade with the remaining percentage',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: AppColors.errorText),
             ),

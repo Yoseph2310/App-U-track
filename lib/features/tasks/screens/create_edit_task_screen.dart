@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../reminders/notification_service.dart';
 import '../../reminders/reminder_preferences.dart';
 import '../models/task_model.dart';
@@ -130,13 +132,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
       lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: AppColors.surface,
-            ),
-          ),
+          data: AppTheme.pickerTheme(context),
           child: child!,
         );
       },
@@ -152,13 +148,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
       initialTime: dueTime ?? TimeOfDay.now(),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: AppColors.surface,
-            ),
-          ),
+          data: AppTheme.pickerTheme(context),
           child: child!,
         );
       },
@@ -181,7 +171,14 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
     final messenger = ScaffoldMessenger.of(context);
     if (_uid.isEmpty) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Inicia sesión para guardar actividades')),
+        SnackBar(
+          content: Text(
+            tr(
+              'Inicia sesión para guardar actividades',
+              'Sign in to save tasks',
+            ),
+          ),
+        ),
       );
       return;
     }
@@ -209,7 +206,14 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
           if (mounted) Navigator.pop(context, updated);
         } else {
           messenger.showSnackBar(
-            const SnackBar(content: Text('No se pudo guardar la actividad')),
+            SnackBar(
+              content: Text(
+                tr(
+                  'No se pudo guardar la actividad',
+                  'Could not save the task',
+                ),
+              ),
+            ),
           );
         }
       } else {
@@ -234,7 +238,14 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
           if (mounted) Navigator.pop(context, saved);
         } else {
           messenger.showSnackBar(
-            const SnackBar(content: Text('No se pudo guardar la actividad')),
+            SnackBar(
+              content: Text(
+                tr(
+                  'No se pudo guardar la actividad',
+                  'Could not save the task',
+                ),
+              ),
+            ),
           );
         }
       }
@@ -254,9 +265,12 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
     final granted = await Permission.notification.isGranted;
     if (!prefs.enabled || !granted) {
       messenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Las notificaciones están desactivadas. Actívalas en Configuración para recibir este recordatorio.',
+            tr(
+              'Las notificaciones están desactivadas. Actívalas en Configuración para recibir este recordatorio.',
+              'Notifications are turned off. Turn them on in Settings to receive this reminder.',
+            ),
           ),
         ),
       );
@@ -269,14 +283,22 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
     ReminderResult result,
   ) {
     final message = switch (result) {
-      ReminderResult.disabledInSettings =>
-        'Guardada, pero las notificaciones están desactivadas en Configuración',
-      ReminderResult.permissionDenied =>
-        'Guardada, pero falta el permiso de notificaciones del sistema',
-      ReminderResult.timePassed =>
-        'Guardada, pero la hora de ese recordatorio ya pasó',
-      ReminderResult.error =>
-        'Guardada, pero no se pudo programar el recordatorio',
+      ReminderResult.disabledInSettings => tr(
+          'Guardada, pero las notificaciones están desactivadas en Configuración',
+          'Saved, but notifications are turned off in Settings',
+        ),
+      ReminderResult.permissionDenied => tr(
+          'Guardada, pero falta el permiso de notificaciones del sistema',
+          'Saved, but the system notification permission is missing',
+        ),
+      ReminderResult.timePassed => tr(
+          'Guardada, pero la hora de ese recordatorio ya pasó',
+          'Saved, but the time for that reminder has already passed',
+        ),
+      ReminderResult.error => tr(
+          'Guardada, pero no se pudo programar el recordatorio',
+          'Saved, but the reminder could not be scheduled',
+        ),
       _ => null,
     };
     if (message != null) {
@@ -292,11 +314,13 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textMain),
+          icon: Icon(Icons.close, color: AppColors.textMain),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Nueva actividad',
+        title: Text(
+          widget.isEditing
+              ? tr('Editar actividad', 'Edit task')
+              : tr('Nueva actividad', 'New task'),
           style: TextStyle(
             color: AppColors.textMain,
             fontSize: 18,
@@ -308,7 +332,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
           TextButton(
             onPressed: isFormValid && !isSaving ? _save : null,
             child: Text(
-              'Guardar',
+              tr('Guardar', 'Save'),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -319,7 +343,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
         ],
       ),
       body: isSaving
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
           : SingleChildScrollView(
@@ -328,28 +352,36 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  _fieldLabel('Título de la actividad'),
+                  _fieldLabel(tr('Título de la actividad', 'Task title')),
                   _textInput(
                     controller: titleController,
-                    hint: 'Ej. Resolver ejercicios 1-10',
+                    hint: tr(
+                      'Ej. Resolver ejercicios 1-10',
+                      'E.g. Solve exercises 1-10',
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _fieldLabel('Materia'),
+                  _fieldLabel(tr('Materia', 'Subject')),
                   _subjectDropdown(),
                   const SizedBox(height: 16),
-                  _fieldLabel('Tipo'),
+                  _fieldLabel(tr('Tipo', 'Type')),
                   _activityTypeChips(),
                   const SizedBox(height: 16),
-                  _fieldLabel('Fecha límite'),
+                  _fieldLabel(tr('Fecha límite', 'Due date')),
                   _datePickerField(),
                   const SizedBox(height: 16),
-                  _fieldLabel('Hora (opcional)'),
+                  _fieldLabel(tr('Hora (opcional)', 'Time (optional)')),
                   _timePickerField(),
                   const SizedBox(height: 16),
-                  _fieldLabel('Notas adicionales (opcional)'),
+                  _fieldLabel(
+                    tr(
+                      'Notas adicionales (opcional)',
+                      'Additional notes (optional)',
+                    ),
+                  ),
                   _textInput(
                     controller: notesController,
-                    hint: 'Agregar detalles',
+                    hint: tr('Agregar detalles', 'Add details'),
                     maxLines: 3,
                   ),
                   const SizedBox(height: 24),
@@ -366,7 +398,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           color: AppColors.textSecondary,
         ),
@@ -383,7 +415,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
       controller: controller,
       maxLines: maxLines,
       onChanged: (_) => setState(() {}),
-      style: const TextStyle(color: AppColors.textMain, fontSize: 14),
+      style: TextStyle(color: AppColors.textMain, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6)),
@@ -395,15 +427,15 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
     );
@@ -411,7 +443,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
 
   Widget _subjectDropdown() {
     if (isLoadingSubjects) {
-      return const SizedBox(
+      return SizedBox(
         height: 48,
         child: Center(
           child: SizedBox(
@@ -436,15 +468,15 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.menu_book, size: 20, color: AppColors.textSecondary),
+          Icon(Icons.menu_book, size: 20, color: AppColors.textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<SubjectModel>(
                 value: selectedSubject,
                 isExpanded: true,
-                hint: const Text(
-                  'Selecciona una materia',
+                hint: Text(
+                  tr('Selecciona una materia', 'Select a subject'),
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                 ),
                 items: subjects.map((subject) {
@@ -452,7 +484,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
                     value: subject,
                     child: Text(
                       subject.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textMain,
                         fontSize: 14,
                       ),
@@ -490,7 +522,7 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
                 ),
               ),
               child: Text(
-                type.label,
+                type.displayLabel,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -517,12 +549,12 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today, size: 20, color: AppColors.textSecondary),
+            Icon(Icons.calendar_today, size: 20, color: AppColors.textSecondary),
             const SizedBox(width: 10),
             Text(
               dueDate != null
                   ? '${dueDate!.day}/${dueDate!.month}/${dueDate!.year}'
-                  : 'Selecciona fecha',
+                  : tr('Selecciona fecha', 'Select date'),
               style: TextStyle(
                 fontSize: 14,
                 color: dueDate != null
@@ -549,10 +581,12 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.schedule, size: 20, color: AppColors.textSecondary),
+            Icon(Icons.schedule, size: 20, color: AppColors.textSecondary),
             const SizedBox(width: 10),
             Text(
-              dueTime != null ? _formatTime12h(dueTime!) : 'Sin hora específica',
+              dueTime != null
+                  ? _formatTime12h(dueTime!)
+                  : tr('Sin hora específica', 'No specific time'),
               style: TextStyle(
                 fontSize: 14,
                 color: dueTime != null
@@ -573,8 +607,8 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Recordarme antes de la entrega',
+            Text(
+              tr('Recordarme antes de la entrega', 'Remind me before the due date'),
               style: TextStyle(fontSize: 14, color: AppColors.textMain),
             ),
             Switch(
@@ -602,8 +636,11 @@ class _CreateEditTaskScreenState extends State<CreateEditTaskScreen> {
                   return DropdownMenuItem(
                     value: timing,
                     child: Text(
-                      'Avisarme ${timing.label}',
-                      style: const TextStyle(
+                      tr(
+                        'Avisarme ${timing.label}',
+                        'Remind me ${timing.displayLabel}',
+                      ),
+                      style: TextStyle(
                         color: AppColors.textMain,
                         fontSize: 14,
                       ),

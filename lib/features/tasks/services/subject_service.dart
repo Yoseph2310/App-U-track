@@ -156,4 +156,14 @@ class SubjectService {
       return null;
     });
   }
+
+  /// Stream con la cantidad de materias del usuario (para el Inicio).
+  Stream<int> watchSubjectCount(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('subjects')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
 }

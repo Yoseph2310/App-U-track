@@ -3,7 +3,7 @@ import 'app_colors.dart';
 
 class AppTextStyles {
   // Títulos de pantalla
-  static const TextStyle headline1 = TextStyle(
+  static TextStyle get headline1 => TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     color: AppColors.textMain,
@@ -11,7 +11,7 @@ class AppTextStyles {
   );
 
   // Subtítulos / nombre de sección
-  static const TextStyle headline2 = TextStyle(
+  static TextStyle get headline2 => TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textMain,
@@ -19,7 +19,7 @@ class AppTextStyles {
   );
 
   // Título de card
-  static const TextStyle headline3 = TextStyle(
+  static TextStyle get headline3 => TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: AppColors.textMain,
@@ -27,7 +27,7 @@ class AppTextStyles {
   );
 
   // Cuerpo principal
-  static const TextStyle body1 = TextStyle(
+  static TextStyle get body1 => TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textMain,
@@ -35,7 +35,7 @@ class AppTextStyles {
   );
 
   // Cuerpo secundario / descripciones
-  static const TextStyle body2 = TextStyle(
+  static TextStyle get body2 => TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
@@ -43,7 +43,7 @@ class AppTextStyles {
   );
 
   // Labels de campos, botones pequeños
-  static const TextStyle label = TextStyle(
+  static TextStyle get label => TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
@@ -52,14 +52,14 @@ class AppTextStyles {
   );
 
   // Texto de botón principal
-  static const TextStyle button = TextStyle(
+  static TextStyle get button => TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: Colors.white,
   );
 
   // Caption — fechas, metadata
-  static const TextStyle caption = TextStyle(
+  static TextStyle get caption => TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,

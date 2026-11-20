@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/settings/app_settings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/services/subject_service.dart';
-import '../../core/services/task_service.dart';
+import '../../core/utils/due_date.dart';
+import '../../core/utils/user_name.dart';
+import '../tasks/models/task_model.dart';
+import '../tasks/services/subject_service.dart';
+import '../tasks/services/task_service.dart';
 import '../subjects/screens/subjects_screen.dart';
 import '../subjects/screens/subject_form_screen.dart';
 import '../tasks/screens/grade_calculator_screen.dart';
 import '../tasks/screens/create_edit_task_screen.dart';
+import '../tasks/screens/upcoming_tasks_screen.dart';
 import '../settings/screens/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,8 +25,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _subjectService = SubjectService();
-  final _taskService = TaskService();
   int _currentIndex = 0;
 
   @override
@@ -31,33 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (uid != null) SubjectsCache.preload(uid);
   }
 
-  // Nombre e inicial del usuario
-  String get _userName {
-    final name = FirebaseAuth.instance.currentUser?.displayName;
-    if (name != null && name.isNotEmpty) return name.split(' ').first;
-    return 'Estudiante';
-  }
-
-  String get _userInitial {
-    final name = FirebaseAuth.instance.currentUser?.displayName;
-    if (name != null && name.isNotEmpty) return name[0].toUpperCase();
-    return 'U';
-  }
-
-  // Fecha de hoy en español
-  String get _todayLabel {
-    const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-    const meses = ['enero','febrero','marzo','abril','mayo','junio',
-      'julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    final now = DateTime.now();
-    return '${dias[now.weekday - 1]}, ${now.day} de ${meses[now.month - 1]}';
-  }
-
   void _goTo(int index) => setState(() => _currentIndex = index);
 
   /// Pantalla que corresponde a cada pestaña del menú inferior.
   /// Todas comparten el mismo menú, así funciona igual en cualquier pantalla.
-  Widget _buildTab(BuildContext context) {
+  Widget _buildTab() {
     switch (_currentIndex) {
       case 1:
         return const SubjectsScreen();
@@ -66,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const SettingsScreen();
       default:
-        return _buildHomeTab(context);
+        return _HomeTab(onGoTo: _goTo);
     }
   }
 
@@ -81,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: _buildTab(context),
+        body: _buildTab(),
 
         // NAVEGACIÓN INFERIOR (única para todas las pestañas)
         bottomNavigationBar: BottomNavigationBar(
@@ -91,175 +73,276 @@ class _HomeScreenState extends State<HomeScreen> {
           type: BottomNavigationBarType.fixed,
           currentIndex: _currentIndex,
           onTap: _goTo,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.book_outlined), label: 'Materias'),
-            BottomNavigationBarItem(icon: Icon(Icons.calculate_outlined), label: 'Calculadora'),
-            BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Configuración'),
+          items: [
+            BottomNavigationBarItem(
+                icon: const Icon(Icons.home_outlined),
+                label: tr('Inicio', 'Home')),
+            BottomNavigationBarItem(
+                icon: const Icon(Icons.book_outlined),
+                label: tr('Materias', 'Subjects')),
+            BottomNavigationBarItem(
+                icon: const Icon(Icons.calculate_outlined),
+                label: tr('Calculadora', 'Calculator')),
+            BottomNavigationBarItem(
+                icon: const Icon(Icons.settings_outlined),
+                label: tr('Configuración', 'Settings')),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildHomeTab(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
+/// Pestaña Inicio. Tiene su propio estado para crear las consultas en
+/// tiempo real una sola vez cada vez que se abre.
+class _HomeTab extends StatefulWidget {
+  const _HomeTab({required this.onGoTo});
 
+  final ValueChanged<int> onGoTo;
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  late final String _userId;
+  late final Stream<int> _subjectCount;
+  late final Stream<int> _pendingCount;
+  late final Stream<List<TaskModel>> _upcoming;
+
+  /// Escucha cambios del perfil (por ejemplo, el nombre que llega de Google
+  /// un momento después de iniciar sesión) para actualizar el saludo.
+  StreamSubscription<User?>? _userSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _userId = FirebaseAuth.instance.currentUser!.uid;
+    _subjectCount = SubjectService().watchSubjectCount(_userId);
+    _pendingCount = TaskService().watchPendingCount(_userId);
+    _upcoming = TaskService().watchUpcomingTasks(_userId);
+    _userSub = FirebaseAuth.instance.userChanges().listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _userSub?.cancel();
+    super.dispose();
+  }
+
+  // Nombre e inicial del usuario
+  String get _userName => UserName.first(FirebaseAuth.instance.currentUser);
+
+  String get _userInitial =>
+      UserName.initial(FirebaseAuth.instance.currentUser);
+
+  // Fecha de hoy en el idioma elegido
+  String get _todayLabel {
+    final text = DueDate.longLabel(DateTime.now());
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
+  /// Texto de la tarjeta "Próx. examen": cuánto falta para el examen
+  /// pendiente más cercano, o "--" si no hay ninguno.
+  String _nextExamLabel(List<TaskModel> upcoming) {
+    for (final task in upcoming) {
+      if (task.activityType == ActivityType.examen) {
+        return DueDate.shortLabel(task.dueDate);
+      }
+    }
+    return '--';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 24),
+      child: StreamBuilder<List<TaskModel>>(
+        stream: _upcoming,
+        builder: (context, upcomingSnap) {
+          final upcoming = upcomingSnap.data ?? const <TaskModel>[];
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
 
-              // HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Hola, $_userName 👋', style: AppTextStyles.headline2),
-                      const SizedBox(height: 2),
-                      Text(_todayLabel, style: AppTextStyles.body2),
-                    ],
-                  ),
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      _userInitial,
-                      style: AppTextStyles.headline3.copyWith(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              // TARJETAS DE RESUMEN — datos reales
-              Row(
-                children: [
-                  // Materias
-                  StreamBuilder<int>(
-                    stream: _subjectService.getSubjectCount(),
-                    builder: (context, snap) => _SummaryCard(
-                      label: 'Materias',
-                      value: '${snap.data ?? 0}',
-                      icon: Icons.book_outlined,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Pendientes
-                  StreamBuilder<int>(
-                    stream: _taskService.getPendingCount(),
-                    builder: (context, snap) => _SummaryCard(
-                      label: 'Pendientes',
-                      value: '${snap.data ?? 0}',
-                      icon: Icons.assignment_outlined,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Próximo examen (estático por ahora)
-                  _SummaryCard(
-                    label: 'Próx. examen',
-                    value: '--',
-                    icon: Icons.event_outlined,
-                    color: AppColors.warnText,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // ACCESOS RÁPIDOS
-              Text('Accesos rápidos', style: AppTextStyles.headline3),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _QuickAction(
-                    icon: Icons.add_circle_outline,
-                    label: 'Nueva\nmateria',
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const SubjectFormScreen())),
-                  ),
-                  const SizedBox(width: 12),
-                  _QuickAction(
-                    icon: Icons.grade_outlined,
-                    label: 'Registrar\nnota',
-                    onTap: () => _goTo(1),
-                  ),
-                  const SizedBox(width: 12),
-                  _QuickAction(
-                    icon: Icons.calculate_outlined,
-                    label: 'Calculadora',
-                    onTap: () => _goTo(2),
-                  ),
-                  const SizedBox(width: 12),
-                  _QuickAction(
-                    icon: Icons.task_alt_outlined,
-                    label: 'Nueva\ntarea',
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(
-                            builder: (_) => CreateEditTaskScreen(userId: userId))),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // PRÓXIMAS ENTREGAS — datos reales
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Próximas entregas', style: AppTextStyles.headline3),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text('Ver todo',
-                        style: AppTextStyles.label.copyWith(color: AppColors.primary)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _taskService.getUpcomingTasks(),
-                builder: (context, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final tasks = snap.data ?? [];
-                  if (tasks.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text('No tienes entregas próximas 🎉',
-                            style: AppTextStyles.body2),
+                // HEADER
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(tr('Hola, $_userName 👋', 'Hi, $_userName 👋'),
+                              style: AppTextStyles.headline2),
+                          const SizedBox(height: 2),
+                          Text(_todayLabel, style: AppTextStyles.body2),
+                        ],
                       ),
-                    );
-                  }
-                  return Column(
-                    children: tasks.map((task) {
-                      final due = (task['dueDate'] as Timestamp).toDate();
-                      final daysLeft = due.difference(DateTime.now()).inDays;
+                    ),
+                    // Acceso directo a la cuenta (pestaña Configuración)
+                    Tooltip(
+                      message: tr('Mi cuenta', 'My account'),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => widget.onGoTo(3),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: AppColors.primary,
+                          child: Text(
+                            _userInitial,
+                            style: AppTextStyles.headline3
+                                .copyWith(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 28),
+
+                // TARJETAS DE RESUMEN — datos reales
+                Row(
+                  children: [
+                    StreamBuilder<int>(
+                      stream: _subjectCount,
+                      builder: (context, snap) => _SummaryCard(
+                        label: tr('Materias', 'Subjects'),
+                        value: '${snap.data ?? 0}',
+                        icon: Icons.book_outlined,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    StreamBuilder<int>(
+                      stream: _pendingCount,
+                      builder: (context, snap) => _SummaryCard(
+                        label: tr('Pendientes', 'Pending'),
+                        value: '${snap.data ?? 0}',
+                        icon: Icons.assignment_outlined,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _SummaryCard(
+                      label: tr('Próx. examen', 'Next exam'),
+                      value: upcomingSnap.hasData
+                          ? _nextExamLabel(upcoming)
+                          : '--',
+                      icon: Icons.event_outlined,
+                      color: AppColors.warnText,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // ACCESOS RÁPIDOS
+                Text(tr('Accesos rápidos', 'Quick actions'),
+                    style: AppTextStyles.headline3),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _QuickAction(
+                      icon: Icons.add_circle_outline,
+                      label: tr('Nueva\nmateria', 'New\nsubject'),
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SubjectFormScreen())),
+                    ),
+                    const SizedBox(width: 12),
+                    _QuickAction(
+                      icon: Icons.grade_outlined,
+                      label: tr('Registrar\nnota', 'Add\ngrade'),
+                      onTap: () => widget.onGoTo(1),
+                    ),
+                    const SizedBox(width: 12),
+                    _QuickAction(
+                      icon: Icons.calculate_outlined,
+                      label: tr('Calculadora', 'Calculator'),
+                      onTap: () => widget.onGoTo(2),
+                    ),
+                    const SizedBox(width: 12),
+                    _QuickAction(
+                      icon: Icons.task_alt_outlined,
+                      label: tr('Nueva\ntarea', 'New\ntask'),
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  CreateEditTaskScreen(userId: _userId))),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // PRÓXIMAS ENTREGAS — datos reales
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(tr('Próximas entregas', 'Upcoming tasks'),
+                        style: AppTextStyles.headline3),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpcomingTasksScreen())),
+                      child: Text(tr('Ver todo', 'See all'),
+                          style: AppTextStyles.label
+                              .copyWith(color: AppColors.primary)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                if (upcomingSnap.hasError)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text(
+                          tr('No se pudieron cargar las entregas.',
+                              'Tasks could not be loaded.'),
+                          style: AppTextStyles.body2),
+                    ),
+                  )
+                else if (!upcomingSnap.hasData)
+                  const Center(child: CircularProgressIndicator())
+                else if (upcoming.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text(
+                          tr('No tienes entregas próximas 🎉',
+                              'You have no upcoming tasks 🎉'),
+                          style: AppTextStyles.body2),
+                    ),
+                  )
+                else
+                  Column(
+                    children: upcoming.take(5).map((task) {
+                      final daysLeft = DueDate.daysUntil(task.dueDate);
                       return _DeliveryItem(
-                        subject: task['subjectName'] ?? '',
-                        task: task['title'] ?? '',
-                        daysLeft: daysLeft,
+                        subject: task.subjectName,
+                        task: task.title,
+                        dueLabel: DueDate.shortLabel(task.dueDate),
                         isUrgent: daysLeft <= 1,
                       );
                     }).toList(),
-                  );
-                },
-              ),
+                  ),
 
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -335,11 +418,11 @@ class _QuickAction extends StatelessWidget {
 class _DeliveryItem extends StatelessWidget {
   final String subject;
   final String task;
-  final int daysLeft;
+  final String dueLabel;
   final bool isUrgent;
 
   const _DeliveryItem({required this.subject, required this.task,
-    required this.daysLeft, required this.isUrgent});
+    required this.dueLabel, required this.isUrgent});
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +433,9 @@ class _DeliveryItem extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUrgent ? AppColors.errorText.withOpacity(0.3) : AppColors.border,
+          color: isUrgent
+              ? AppColors.errorText.withValues(alpha: 0.3)
+              : AppColors.border,
         ),
       ),
       child: Row(
@@ -380,7 +465,7 @@ class _DeliveryItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              daysLeft == 0 ? 'Hoy' : '${daysLeft}d',
+              dueLabel,
               style: AppTextStyles.caption.copyWith(
                 color: isUrgent ? AppColors.errorText : AppColors.okText,
               ),
